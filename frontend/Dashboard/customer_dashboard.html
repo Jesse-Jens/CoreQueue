@@ -172,7 +172,7 @@
     <h1>Dashboard</h1>
     <div class="controls-left">
       <button>🌙</button>
-      <button>+ Ticket Aanmaken</button>
+      <a class="btn-create" href="/Dashboard/Tickets/new_ticket_customer">+ Ticket Aanmaken</a>
       <select>
         <option>Select Organisation</option>
         <option>Org A</option>
@@ -180,10 +180,10 @@
       </select>
     </div>
     <div class="controls-right">
-      <button>Dashboard</button>
-      <button>Settings</button>
-      <button>Sign Out</button>
-    <//div>
+      <a href="/Dashboard/customer_dashboard">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
   </header>
   <main>
     <div class="filters">
@@ -199,7 +199,7 @@
       <button class="status-button archived">Archived</button>
     </div>
     <div class="tickets-list">
-      <div class="ticket-card">
+      <a class="ticket-card" href="/Dashboard/Tickets/ticket_view_customer">
         <div class="ticket-header">
           <span class="ticket-code">#00123</span>
           <span class="ticket-title">Mijn eigen ticket titel…</span>
@@ -207,8 +207,12 @@
         </div>
         <div class="ticket-body">Korte beschrijving van het ticket.</div>
         <div class="ticket-meta">Datum: 01-08-2025</div>
-      </div>
+      </a>
     </div>
   </main>
+  <script src="../js/app.js"></script>
+  <script>
+    requireLogin('customer');
+  </script>
 </body>
 </html>
