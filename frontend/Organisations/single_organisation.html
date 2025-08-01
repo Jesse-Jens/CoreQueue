@@ -14,9 +14,16 @@
       --input-bg: #2a2a3e;
       --input-border: #3a3a4e;
       --danger: #FF4C4C;
-      --success: #4CAF50;
-      --info: #2196F3;
-    }
+    --success: #4CAF50;
+    --info: #2196F3;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+    --input-bg: #fff;
+    --input-border: #ccc;
+  }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
     body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
     aside.sidebar { width:240px; background:var(--bg-light); display:flex; flex-direction:column; justify-content:space-between; padding:2rem 1rem; }
@@ -84,14 +91,14 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#" class="active">Organisations</a>
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations" class="active">Organisations</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
@@ -169,6 +176,11 @@
         document.getElementById(tab).classList.add('active');
       });
     });
+  </script>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
   </script>
 </body>
 </html>

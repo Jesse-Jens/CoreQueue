@@ -10,8 +10,13 @@
       --bg-light: #2a2a3e;
       --text: #e0e0fa;
       --accent: #1E90FF;
-      --danger: #FF4C4C;
-    }
+    --danger: #FF4C4C;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
     body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
     aside.sidebar {
@@ -121,17 +126,17 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
+        <a href="/Dashboard/customer_dashboard">Dashboard</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
-      <a href="#" class="back">← Back</a>
+      <a href="/Dashboard/customer_dashboard" class="back">← Back</a>
       <h1>Ticket #00013 - Customer Test</h1>
       <button class="resolve-btn">Mark Resolved</button>
     </div>
@@ -185,6 +190,11 @@
         document.getElementById(tab.dataset.target).classList.add('active');
       });
     });
+  </script>
+  <script src="../../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('customer');
   </script>
 </body>
 </html>
