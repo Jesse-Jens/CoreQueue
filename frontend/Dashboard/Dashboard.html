@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - CoreQueue</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --bg-light: #2a2a3e;
+      --text: #e0e0fa;
+      --accent: #1E90FF;
+      --accent-light: #4F8CFF;
+      --critical: #FF4C4C;
+      --open: #4CAF50;
+      --in-progress: #FFC107;
+      --resolved: #2196F3;
+      --archived: #888;
+    }
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      display: flex;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-light);
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .sidebar h2 {
+      color: var(--accent);
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .nav-links { display: flex; flex-direction: column; }
+    .nav-links a {
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .nav-links a.active,
+    .nav-links a:hover { background: var(--accent); color: #fff; }
+    .settings-group { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--bg); }
+
+    /* Main */
+    .main { flex: 1; padding: 2rem; overflow-y: auto; }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .header h1 { font-size: 2rem; }
+    .header-controls { display: flex; gap: 0.5rem; }
+    .btn-create,
+    .btn-toggle {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 0.9rem;
+    }
+    .btn-create:hover,
+    .btn-toggle:hover { background: var(--accent-light); }
+
+    /* Summary cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: var(--bg-light);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .card .number { font-size: 2.5rem; font-weight: bold; color: var(--accent); }
+
+    /* Filters */
+    .filters {
+      background: var(--bg-light);
+      padding: 1rem;
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .filters select {
+      padding: 0.5rem;
+      border: none;
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* Status buttons */
+    .status-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .status-button {
+      padding: 0.4rem 0.8rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      background: var(--bg-light);
+      color: var(--text);
+      transition: background 0.2s;
+    }
+    .status-button.active,
+    .status-button:hover { background: var(--accent); color: #fff; }
+    .status-button.open { background: var(--open); color: #fff; }
+    .status-button.in-progress { background: var(--in-progress); color: #000; }
+    .status-button.resolved { background: var(--resolved); color: #fff; }
+    .status-button.archived { background: var(--archived); color: #fff; }
+
+    /* Ticket list */
+    .tickets-list { display: grid; gap: 1rem; }
+    .ticket-card {
+      background: var(--bg-light);
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .ticket-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .ticket-title {
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    .label {
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #fff;
+    }
+    .label-critical { background: var(--critical); }
+    .label-open { background: var(--open); }
+    .label-in-progress { background: var(--in-progress); color: #000; }
+    .label-resolved { background: var(--resolved); }
+    .label-archived { background: var(--archived); }
+    .label-priority { background: var(
+--accent); }
+    .ticket-body { margin-bottom: 0.5rem; }
+    .ticket-meta { font-size: 0.8rem; color: var(--text); }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; flex-direction: row; justify-content: space-around; }
+      .main { padding: 1rem; }
+      .sidebar h2 { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div>
+      <h2>CoreQueue</h2>
+      <nav class="nav-links">
+        <a href="#" class="active">Dashboard</a>
+        <a href="#">Inventory</a>
+        <a href="#">Organisations</a>
+      </nav>
+    </div>
+    <div class="settings-group nav-links">
+      <a href="#">Settings</a>
+      <a href="#">Customer View</a>
+      <a href="#">Sign Out</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header">
+      <h1>Dashboard</h1>
+      <div class="header-controls">
+        <button class="btn-toggle">🌙</button>
+        <button class="btn-create">+ Create New Ticket</button>
+      </div>
+    </div>
+    <section class="cards">
+      <div class="card"><h3>Total Tickets</h3><p class="number">128</p></div>
+      <div class="card"><h3>Open Tickets</h3><p class="number">42</p></div>
+      <div class="card"><h3>In Progress</h3><p class="number">16</p></div>
+      <div class="card"><h3>Resolved</h3><p class="number">55</p></div>
+    </section>
+
+    <div class="filters">
+      <select><option>All Companies</option></select>
+      <select><option>All Statuses</option></select>
+      <select><option>All Priorities</option></select>
+      <select><option>All Technicians</option></select>
+      <select><option>Newest First</option></select>
+    </div>
+
+    <div class="status-buttons">
+      <button class="status-button active">All Active</button>
+      <button class="status-button open">Open</button>
+      <button class="status-button in-progress">In Progress</button>
+      <button class="status-button resolved">Resolved</button>
+      <button class="status-button archived">Archived</button>
+    </div>
+
+    <div class="tickets-list">
+      <div class="ticket-card">
+        <div class="ticket-header">
+          <span class="ticket-code">#00013</span>
+          <span class="ticket-title">Customer test ticket with long title...</span>
+          <span class="label label-open">Open</span>
+          <span class="label label-priority">Medium</span>
+        </div>
+        <div class="ticket-body">Een kort overzicht van de inhoud van het ticket voor context.</div>
+        <div class="ticket-meta">Customer: test@domain.com | 5-6-2025</div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

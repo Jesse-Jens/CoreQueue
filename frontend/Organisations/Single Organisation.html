@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organisation Details - CoreQueue</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --bg-light: #2a2a3e;
+      --text: #e0e0fa;
+      --accent: #1E90FF;
+      --accent-light: #4F8CFF;
+      --input-bg: #2a2a3e;
+      --input-border: #3a3a4e;
+      --danger: #FF4C4C;
+      --success: #4CAF50;
+      --info: #2196F3;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+    body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
+    aside.sidebar { width:240px; background:var(--bg-light); display:flex; flex-direction:column; justify-content:space-between; padding:2rem 1rem; }
+    aside.sidebar h2 { color:var(--accent); font-size:1.5rem; text-align:center; margin-bottom:2rem; }
+    nav.nav-links a { display:block; color:var(--text); text-decoration:none; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:4px; transition:background .2s; }
+    nav.nav-links a:hover, nav.nav-links a.active { background:var(--accent); color:#fff; }
+    .settings-group { border-top:1px solid var(--bg); padding-top:1rem; margin-top:1rem; }
+    .settings-group a { display:block; color:var(--text); text-decoration:none; padding:.5rem 0; transition:color .2s; }
+    .settings-group a:hover { color:var(--accent); }
+    main.main { flex:1; padding:2rem; overflow-y:auto; }
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+    .header h1 { font-size:2rem; }
+    .header-controls button { background:var(--accent); color:#fff; border:none; padding:.5rem 1rem; border-radius:4px; cursor:pointer; transition:background .2s; font-size:.9rem; }
+    .header-controls button:hover { background:var(--accent-light); }
+    .tabs { display:flex; border-bottom:1px solid var(--bg); margin-bottom:1.5rem; }
+    .tabs button { background:none; border:none; padding:.75rem 1.5rem; cursor:pointer; color:var(--text); font-size:1rem; transition:background .2s; }
+    .tabs button.active { border-bottom:3px solid var(--accent); color:#fff; }
+    .content-section { display:none; }
+    .content-section.active { display:block; }
+    .form-group { margin-bottom:1rem; }
+    .form-group label { display:block; font-size:.9rem; margin-bottom:.25rem; }
+    .form-group input, .form-group textarea { width:100%; padding:.5rem; background:var(--input-bg); border:1px solid var(--input-border); border-radius:4px; color:var(--text); font-size:1rem; }
+    .form-group textarea { min-height:6rem; resize:vertical; }
+    .btn-save { background:var(--success); color:#fff; border:none; padding:.6rem 1.2rem; border-radius:4px; cursor:pointer; transition:background .2s; }
+    .btn-save:hover { background:#42b35a; }
+    /* Contacts */
+    .contacts-list { margin-top:1rem; display:grid; gap:.75rem; }
+    .contact-card { background:var(--bg-light); padding:1rem; border-radius:6px; }
+    .contact-card h3 { margin-bottom:.5rem; font-size:1rem; }
+    .contact-card p { font-size:.9rem; margin-bottom:.25rem; }
+    .badge { padding:.2rem .6rem; border-radius:4px; font-size:.75rem; font-weight:500; color:#fff; }
+    .badge-controller { background:var(--accent); }
+    .badge-customer { background:var(--info); }
+    .btn-add-contact { background:var(--accent); color:#fff; border:none; padding:.4rem .8rem; border-radius:4px; cursor:pointer; font-size:.85rem; transition:background .2s; }
+    .btn-add-contact:hover { background:var(--accent-light); }
+    /* Wiki */
+    .wiki-area { margin-top:1rem; }
+    .wiki-area textarea { width:100%; min-height:12rem; background:var(--input-bg); border:1px solid var(--input-border); border-radius:4px; padding:.75rem; font-size:1rem; color:var(--text); }
+    .file-list { margin-top:1rem; }
+    .file-list h3 { margin-bottom:.5rem; }
+    .btn-upload { background:var(--accent); color:#fff; border:none; padding:.5rem 1rem; border-radius:4px; cursor:pointer; margin-bottom:.5rem; }
+    .btn-upload:hover { background:var(--accent-light); }
+    .file-item { display:flex; align-items:center; background:var(--bg-light); padding:.75rem 1rem; border-radius:6px; }
+    .file-preview { width:40px; height:40px; object-fit:cover; border-radius:4px; margin-right:.75rem; }
+    .btn-remove {
+      background:var(--danger); color:#fff; border:none; padding:.4rem .8rem; border-radius:4px; cursor:pointer; margin-left:auto; }
+    .btn-remove:hover { background:#e04c4c; }
+    /* Contact action buttons styling */
+    .contact-actions .btn-link.edit {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+    .contact-actions .btn-link.delete {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+    }
+    .btn-remove:hover { background:#e04c4c; }
+    @media(max-width:768px){ body{flex-direction:column;} aside.sidebar{width:100%;flex-direction:row;justify-content:space-around;padding:1rem;} main.main{padding:1rem;} }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="top-nav">
+      <h2>CoreQueue</h2>
+      <nav class="nav-links">
+        <a href="#">Dashboard</a>
+        <a href="#">Inventory</a>
+        <a href="#" class="active">Organisations</a>
+      </nav>
+    </div>
+    <div class="settings-group">
+      <a href="#">Settings</a>
+      <a href="#">Sign Out</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header">
+      <h1>Organisation Details</h1>
+      <div class="header-controls">
+        <button class="btn-save">Save Changes</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="active" data-tab="general">General</button>
+      <button data-tab="contacts">Contacts</button>
+      <button data-tab="wiki">Wiki</button>
+    </div>
+    <section id="general" class="content-section active">
+      <div class="card">
+        <h2>General Information</h2>
+        <div class="form-group"><label>Name</label><input type="text" placeholder="Organization Name"></div>
+        <div class="form-group"><label>Address</label><input type="text" placeholder="Street, City, ZIP"></div>
+        <div class="form-group"><label>Phone</label><input type="tel" placeholder="+31 6 12345678"></div>
+        <div class="form-group"><label>Email</label><input type="email" placeholder="contact@org.com"></div>
+        <div class="form-group"><label>Additional Info</label><textarea placeholder="Extra information..."></textarea></div>
+      </div>
+    </section>
+    <section id="contacts" class="content-section">
+      <div class="card">
+        <h2>Contacts</h2>
+        <button class="btn-add-contact">+ Add Contact</button>
+        <div class="contacts-list">
+          <div class="contact-card">
+            <h3>John Doe</h3>
+            <p>john@org.com</p>
+            <p>+31 6 98765432</p>
+            <span class="badge badge-controller">Controller</span>
+            <div class="contact-actions" style="margin-top:.75rem; text-align:right;">
+              <button class="btn-link edit">Edit</button>
+              <button class="btn-link delete">Delete</button>
+            </div>
+          </div>
+          </div>
+          <div class="contact-card">
+            <h3>Jane Smith</h3>
+            <p>jane@org.com</p>
+            <p>+31 6 12349876</p>
+            <span class="badge badge-customer">Customer</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="wiki" class="content-section">
+      <div class="card">
+        <h2>Wiki / Notes</h2>
+        <div class="wiki-area">
+          <textarea placeholder="Enter detailed notes here..."></textarea>
+        </div>
+        <div class="file-list">
+          <h3>Files</h3>
+          <button class="btn-upload">Upload File</button>
+          <div class="file-item">
+            <img src="preview.png" alt="Preview" class="file-preview">
+            <span class="file-name">ProjectPlan.pdf</span>
+            <button class="btn-remove">Remove</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.querySelectorAll('.tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.getAttribute('data-tab');
+        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
