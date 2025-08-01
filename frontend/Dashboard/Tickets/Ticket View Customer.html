@@ -121,17 +121,17 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
+        <a href="/Dashboard/Customer_Dashboard.html">Dashboard</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings.html">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
-      <a href="#" class="back">← Back</a>
+      <a href="/Dashboard/Customer_Dashboard.html" class="back">← Back</a>
       <h1>Ticket #00013 - Customer Test</h1>
       <button class="resolve-btn">Mark Resolved</button>
     </div>
@@ -185,6 +185,10 @@
         document.getElementById(tab.dataset.target).classList.add('active');
       });
     });
+  </script>
+  <script src="../../js/app.js"></script>
+  <script>
+    requireLogin('customer');
   </script>
 </body>
 </html>

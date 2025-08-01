@@ -141,5 +141,19 @@
       <button type="submit" class="btn-login">Log In</button>
     </form>
   </div>
+  <script src="js/app.js"></script>
+  <script>
+    document.querySelector('.login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const redirect = login(email, password);
+      if (redirect) {
+        window.location.href = redirect;
+      } else {
+        alert('Invalid credentials');
+      }
+    });
+  </script>
 </body>
 </html>

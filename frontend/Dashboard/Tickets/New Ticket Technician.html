@@ -75,19 +75,19 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#">Organisations</a>
+        <a href="/Dashboard/Dashboard.html">Dashboard</a>
+        <a href="/Inventory.html">Inventory</a>
+        <a href="/Organisations/Organisations.html">Organisations</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings.html">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
-      <a href="javascript:history.back()" class="back">← Back</a>
+      <a href="/Dashboard/Dashboard.html" class="back">← Back</a>
       <h1>Create New Ticket</h1>
     </div>
     <div class="card">
@@ -140,5 +140,9 @@
       </form>
     </div>
   </main>
+  <script src="../../js/app.js"></script>
+  <script>
+    requireLogin('technician');
+  </script>
 </body>
 </html>
