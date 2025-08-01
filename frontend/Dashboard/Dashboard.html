@@ -194,15 +194,15 @@
     <div>
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#" class="active">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#">Organisations</a>
+        <a href="/Dashboard/Dashboard.html" class="active">Dashboard</a>
+        <a href="/Inventory.html">Inventory</a>
+        <a href="/Organisations/Organisations.html">Organisations</a>
       </nav>
     </div>
     <div class="settings-group nav-links">
-      <a href="#">Settings</a>
-      <a href="#">Customer View</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings.html">Settings</a>
+      <a href="/Dashboard/Customer_Dashboard.html">Customer View</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
@@ -210,7 +210,7 @@
       <h1>Dashboard</h1>
       <div class="header-controls">
         <button class="btn-toggle">🌙</button>
-        <button class="btn-create">+ Create New Ticket</button>
+        <a class="btn-create" href="/Dashboard/Tickets/New Ticket Technician.html">+ Create New Ticket</a>
       </div>
     </div>
     <section class="cards">
@@ -237,7 +237,7 @@
     </div>
 
     <div class="tickets-list">
-      <div class="ticket-card">
+      <a class="ticket-card" href="/Dashboard/Tickets/Ticket View Technician.html">
         <div class="ticket-header">
           <span class="ticket-code">#00013</span>
           <span class="ticket-title">Customer test ticket with long title...</span>
@@ -246,8 +246,12 @@
         </div>
         <div class="ticket-body">Een kort overzicht van de inhoud van het ticket voor context.</div>
         <div class="ticket-meta">Customer: test@domain.com | 5-6-2025</div>
-      </div>
+      </a>
     </div>
   </main>
+  <script src="../js/app.js"></script>
+  <script>
+    requireLogin('technician');
+  </script>
 </body>
 </html>
