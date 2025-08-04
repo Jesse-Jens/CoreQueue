@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organisation Details - CoreQueue</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --bg-light: #2a2a3e;
+      --text: #e0e0fa;
+      --accent: #1E90FF;
+      --accent-light: #4F8CFF;
+      --input-bg: #2a2a3e;
+      --input-border: #3a3a4e;
+      --danger: #FF4C4C;
+    --success: #4CAF50;
+    --info: #2196F3;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+    --input-bg: #fff;
+    --input-border: #ccc;
+  }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+    body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
+    aside.sidebar { width:240px; background:var(--bg-light); display:flex; flex-direction:column; justify-content:space-between; padding:2rem 1rem; }
+    aside.sidebar h2 { color:var(--accent); font-size:1.5rem; text-align:center; margin-bottom:2rem; }
+    nav.nav-links a { display:block; color:var(--text); text-decoration:none; padding:0.75rem 1rem; margin-bottom:0.5rem; border-radius:4px; font-size:0.95rem; transition:background .2s; }
+    nav.nav-links a:hover, nav.nav-links a.active { background:var(--accent); color:#fff; }
+    .settings-group { border-top:1px solid var(--bg); padding-top:1rem; margin-top:1rem; }
+    .settings-group a { display:block; color:var(--text); text-decoration:none; padding:.5rem 0; transition:color .2s; }
+    .settings-group a:hover { color:var(--accent); }
+    main.main { flex:1; padding:2rem; overflow-y:auto; }
+    .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+    .header a.back{color:var(--accent-light);text-decoration:none;font-size:.9rem;margin-right:1rem;}
+    .header h1 { font-size:2rem; flex:1; }
+    .header-controls{display:flex;gap:.5rem;}
+    .header-controls button { background:var(--accent); color:#fff; border:none; padding:.5rem 1rem; border-radius:4px; cursor:pointer; transition:background .2s; font-size:.9rem; }
+    .header-controls button:hover { background:var(--accent-light); }
+    .tabs { display:flex; border-bottom:1px solid var(--bg); margin-bottom:1.5rem; }
+    .tabs button { background:none; border:none; padding:.75rem 1.5rem; cursor:pointer; color:var(--text); font-size:1rem; transition:background .2s; }
+    .tabs button.active { border-bottom:3px solid var(--accent); color:#fff; }
+    .content-section { display:none; }
+    .content-section.active { display:block; }
+    .form-group { margin-bottom:1rem; }
+    .form-group label { display:block; font-size:.9rem; margin-bottom:.25rem; }
+    .form-group input, .form-group textarea { width:100%; padding:.5rem; background:var(--input-bg); border:1px solid var(--input-border); border-radius:4px; color:var(--text); font-size:1rem; }
+    .form-group textarea { min-height:6rem; resize:vertical; }
+    .btn-save { background:var(--success); color:#fff; border:none; padding:.6rem 1.2rem; border-radius:4px; cursor:pointer; transition:background .2s; }
+    .btn-save:hover { background:#42b35a; }
+    .btn-edit { background:var(--accent); color:#fff; border:none; padding:.6rem 1.2rem; border-radius:4px; cursor:pointer; transition:background .2s; }
+    .btn-edit:hover { background:var(--accent-light); }
+    .btn-archive { background:var(--danger); color:#fff; border:none; padding:.6rem 1.2rem; border-radius:4px; cursor:pointer; margin-top:1rem; }
+    .btn-archive:hover { background:#e04c4c; }
+    /* Contacts */
+    .contacts-list { margin-top:1rem; display:grid; gap:.75rem; }
+    .contact-card { background:var(--bg-light); padding:1rem; border-radius:6px; }
+    .contact-card h3 { margin-bottom:.5rem; font-size:1rem; }
+    .contact-card p { font-size:.9rem; margin-bottom:.25rem; }
+    .badge { padding:.2rem .6rem; border-radius:4px; font-size:.75rem; font-weight:500; color:#fff; }
+    .badge-controller { background:var(--accent); }
+    .badge-customer { background:var(--info); }
+    .btn-add-contact { background:var(--accent); color:#fff; border:none; padding:.4rem .8rem; border-radius:4px; cursor:pointer; font-size:.85rem; transition:background .2s; }
+    .btn-add-contact:hover { background:var(--accent-light); }
+    /* Wiki */
+    .wiki-area { margin-top:1rem; }
+    .wiki-area textarea { width:100%; min-height:12rem; background:var(--input-bg); border:1px solid var(--input-border); border-radius:4px; padding:.75rem; font-size:1rem; color:var(--text); }
+    .wiki-actions{margin-top:.5rem;}
+    .file-list { margin-top:1rem; }
+    .file-list h3 { margin-bottom:.5rem; }
+    .btn-upload { background:var(--accent); color:#fff; border:none; padding:.5rem 1rem; border-radius:4px; cursor:pointer; margin-bottom:.5rem; }
+    .btn-upload:hover { background:var(--accent-light); }
+    .file-item { display:flex; align-items:center; background:var(--bg-light); padding:.75rem 1rem; border-radius:6px; }
+    .file-preview { width:40px; height:40px; object-fit:cover; border-radius:4px; margin-right:.75rem; }
+    .btn-remove {
+      background:var(--danger); color:#fff; border:none; padding:.4rem .8rem; border-radius:4px; cursor:pointer; margin-left:auto; }
+    .btn-remove:hover { background:#e04c4c; }
+    /* Contact action buttons styling */
+    .contact-actions .btn-link.edit {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+    .contact-actions .btn-link.delete {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+    }
+    .btn-remove:hover { background:#e04c4c; }
+    @media(max-width:768px){ body{flex-direction:column;} aside.sidebar{width:100%;flex-direction:row;justify-content:space-around;padding:1rem;} main.main{padding:1rem;} }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="top-nav">
+      <h2>CoreQueue</h2>
+      <nav class="nav-links">
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations" class="active">Organisations</a>
+      </nav>
+    </div>
+    <div class="settings-group">
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header">
+      <a href="/Organisations/organisations" class="back">← Back</a>
+      <h1>Organisation Details</h1>
+      <div class="header-controls">
+        <button class="theme-toggle">🌙</button>
+        <button class="btn-edit">Edit</button>
+        <button class="btn-save" style="display:none">Save</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="active" data-tab="general">General</button>
+      <button data-tab="contacts">Contacts</button>
+      <button data-tab="wiki">Wiki</button>
+    </div>
+    <section id="general" class="content-section active">
+      <div class="card">
+        <h2>General Information</h2>
+        <div class="form-group"><label>Name</label><input id="orgName" type="text" placeholder="Organization Name" disabled></div>
+        <div class="form-group"><label>Address</label><input id="orgAddress" type="text" placeholder="Street, City, ZIP" disabled></div>
+        <div class="form-group"><label>Phone</label><input id="orgPhone" type="tel" placeholder="+31 6 12345678" disabled></div>
+        <div class="form-group"><label>Email</label><input id="orgEmail" type="email" placeholder="contact@org.com" disabled></div>
+        <div class="form-group"><label>Additional Info</label><textarea id="orgNote" placeholder="Extra information..." disabled></textarea></div>
+        <button id="btnArchive" class="btn-archive" style="display:none">Archive Organisation</button>
+      </div>
+    </section>
+    <section id="contacts" class="content-section">
+      <div class="card">
+        <h2>Contacts</h2>
+        <button class="btn-add-contact">+ Add Contact</button>
+        <div class="contacts-list" id="contactsList"></div>
+      </div>
+    </section>
+    <section id="wiki" class="content-section">
+      <div class="card">
+        <h2>Wiki / Notes</h2>
+        <div class="wiki-area">
+          <textarea id="orgWiki" placeholder="Enter detailed notes here..." disabled></textarea>
+          <div class="wiki-actions">
+            <button id="btnEditWiki" class="btn-edit">Edit</button>
+            <button id="btnSaveWiki" class="btn-save" style="display:none">Save</button>
+          </div>
+        </div>
+        <div class="file-list">
+          <h3>Files</h3>
+          <button class="btn-upload">Upload File</button>
+          <input type="file" id="fileInput" style="display:none" />
+          <div id="filesContainer"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.querySelectorAll('.tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.getAttribute('data-tab');
+        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(tab).classList.add('active');
+      });
+    });
+  </script>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get('id');
+    const org = getOrganisation(orgId);
+    if (!org) {
+      window.location.href = '/Organisations/organisations';
+    }
+    document.getElementById('orgName').value = org.name || '';
+    document.getElementById('orgAddress').value = org.address || '';
+    document.getElementById('orgPhone').value = org.phone || '';
+    document.getElementById('orgEmail').value = org.email || '';
+    document.getElementById('orgNote').value = org.note || '';
+    document.getElementById('orgWiki').value = org.wiki || '';
+
+    const fields = ['orgName','orgAddress','orgPhone','orgEmail','orgNote'].map(id => document.getElementById(id));
+    const editBtn = document.querySelector('.btn-edit');
+    const saveBtn = document.querySelector('.btn-save');
+    const archiveBtn = document.getElementById('btnArchive');
+    if (org.archived) {
+      archiveBtn.textContent = 'Unarchive Organisation';
+    }
+
+    editBtn.addEventListener('click', () => {
+      fields.forEach(f => f.disabled = false);
+      editBtn.style.display = 'none';
+      saveBtn.style.display = 'inline-block';
+      archiveBtn.style.display = 'inline-block';
+    });
+
+    saveBtn.addEventListener('click', () => {
+      updateOrganisation(orgId, {
+        name: document.getElementById('orgName').value.trim(),
+        address: document.getElementById('orgAddress').value.trim(),
+        phone: document.getElementById('orgPhone').value.trim(),
+        email: document.getElementById('orgEmail').value.trim(),
+        note: document.getElementById('orgNote').value.trim()
+      });
+      fields.forEach(f => f.disabled = true);
+      saveBtn.style.display = 'none';
+      editBtn.style.display = 'inline-block';
+      archiveBtn.style.display = 'none';
+    });
+
+    archiveBtn.addEventListener('click', () => {
+      if (org.archived) {
+        unarchiveOrganisation(orgId);
+      } else {
+        archiveOrganisation(orgId);
+      }
+      window.location.href = '/Organisations/organisations';
+    });
+
+    function renderContacts() {
+      const list = document.getElementById('contactsList');
+      list.innerHTML = '';
+      const current = getOrganisation(orgId);
+      current.contacts.forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'contact-card';
+        const role = c.role || 'customer';
+        div.innerHTML = `<h3>${c.name} <span class="badge badge-${role}">${role}</span></h3>
+          <p>${c.email || ''}</p><p>${c.phone || ''}</p>
+          <div class="contact-actions"><button class="btn-link edit" onclick="window.location.href='/Organisations/contact?id=${orgId}&contact=${i}'">Edit</button></div>`;
+        list.appendChild(div);
+      });
+    }
+    renderContacts();
+    document.querySelector('.btn-add-contact').addEventListener('click', () => {
+      window.location.href = `/Organisations/contact?id=${orgId}`;
+    });
+
+    const wikiTextarea = document.getElementById('orgWiki');
+    const editWikiBtn = document.getElementById('btnEditWiki');
+    const saveWikiBtn = document.getElementById('btnSaveWiki');
+    editWikiBtn.addEventListener('click', () => {
+      wikiTextarea.disabled = false;
+      editWikiBtn.style.display = 'none';
+      saveWikiBtn.style.display = 'inline-block';
+    });
+    saveWikiBtn.addEventListener('click', () => {
+      updateOrganisation(orgId, { wiki: wikiTextarea.value });
+      wikiTextarea.disabled = true;
+      saveWikiBtn.style.display = 'none';
+      editWikiBtn.style.display = 'inline-block';
+    });
+
+    const fileInput = document.getElementById('fileInput');
+    document.querySelector('.btn-upload').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        addFile(orgId, { name: file.name, data: e.target.result });
+        renderFiles();
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = '';
+    });
+
+    function renderFiles() {
+      const container = document.getElementById('filesContainer');
+      container.innerHTML = '';
+      const current = getOrganisation(orgId);
+      (current.files || []).forEach((f, idx) => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        let preview = '';
+        if (f.data && f.data.startsWith('data:image')) {
+          preview = `<img src="${f.data}" alt="Preview" class="file-preview">`;
+        } else {
+          preview = `<div class="file-preview"></div>`;
+        }
+        div.innerHTML = `${preview}<a href="${f.data}" download="${f.name}" class="file-name">${f.name}</a><button class="btn-remove" data-index="${idx}">Remove</button>`;
+        container.appendChild(div);
+      });
+      container.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          removeFile(orgId, btn.dataset.index);
+          renderFiles();
+        });
+      });
+    }
+    renderFiles();
+  </script>
+</body>
+</html>
