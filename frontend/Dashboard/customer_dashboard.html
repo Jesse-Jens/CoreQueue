@@ -14,8 +14,13 @@
       --open: #4CAF50;
       --in-progress: #FFC107;
       --resolved: #2196F3;
-      --archived: #888;
-    }
+    --archived: #888;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
     *, *::before, *::after {
       margin: 0;
       padding: 0;
@@ -72,7 +77,20 @@
       cursor: pointer;
       transition: background 0.2s;
       font-size: 0.9rem;
+    }
+    .controls-right a {
+      background: var(--bg-light);
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
       margin-left: 0.5rem;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .controls-right a:hover {
+      background: var(--accent);
+      color: #fff;
     }
     .controls-right button:hover {
       background: var(--accent);
@@ -130,6 +148,11 @@
       border-radius: 8px;
       padding: 1rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      border: none;
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+      color: inherit;
     }
     .ticket-header {
       display: flex;
@@ -171,19 +194,15 @@
   <header>
     <h1>Dashboard</h1>
     <div class="controls-left">
-      <button>🌙</button>
-      <button>+ Ticket Aanmaken</button>
-      <select>
-        <option>Select Organisation</option>
-        <option>Org A</option>
-        <option>Org B</option>
-      </select>
+      <button class="theme-toggle">🌙</button>
+      <a class="btn-create" href="/Dashboard/Tickets/new_ticket_customer">+ Ticket Aanmaken</a>
+      <select id="orgSwitcher"></select>
     </div>
     <div class="controls-right">
-      <button>Dashboard</button>
-      <button>Settings</button>
-      <button>Sign Out</button>
-    <//div>
+      <a href="/Dashboard/customer_dashboard">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
   </header>
   <main>
     <div class="filters">
@@ -198,17 +217,65 @@
       <button class="status-button resolved">Resolved</button>
       <button class="status-button archived">Archived</button>
     </div>
-    <div class="tickets-list">
-      <div class="ticket-card">
-        <div class="ticket-header">
-          <span class="ticket-code">#00123</span>
-          <span class="ticket-title">Mijn eigen ticket titel…</span>
-          <span class="label label-open">Open</span>
-        </div>
-        <div class="ticket-body">Korte beschrijving van het ticket.</div>
-        <div class="ticket-meta">Datum: 01-08-2025</div>
-      </div>
-    </div>
+    <div class="tickets-list" id="ticketList"></div>
   </main>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('customer');
+    const list = document.getElementById('ticketList');
+    const orgSwitcher = document.getElementById('orgSwitcher');
+    const userEmail = localStorage.getItem('userEmail');
+    const account = findAccount(userEmail);
+    function populateSwitcher() {
+      orgSwitcher.innerHTML = '';
+      (account?.organisations || []).forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = getOrganisation(o.id)?.name || o.id;
+        orgSwitcher.appendChild(opt);
+      });
+      const current = localStorage.getItem('currentOrg');
+      if (current) orgSwitcher.value = current;
+    }
+    function renderTickets() {
+      list.innerHTML = '';
+      const orgId = localStorage.getItem('currentOrg');
+      const role = localStorage.getItem('orgRole');
+      const tickets = getTickets().filter(t => {
+        if (role === 'controller') return t.organisation === orgId;
+        return t.organisation === orgId && t.contactEmail === userEmail;
+      });
+      tickets.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'ticket-card';
+        btn.type = 'button';
+        btn.innerHTML = `
+          <div class="ticket-header">
+            <span class="ticket-code">#${t.id}</span>
+            <span class="ticket-title">${t.title}</span>
+            <span class="label label-open">${t.status}</span>
+          </div>
+          <div class="ticket-body">${t.description.substring(0,80)}</div>
+          <div class="ticket-meta">${formatDate(t.created)}</div>
+        `;
+        btn.addEventListener('click', () => {
+          window.location.href = `/Dashboard/Tickets/ticket_view_customer?id=${t.id}`;
+        });
+        list.appendChild(btn);
+      });
+    }
+    orgSwitcher.addEventListener('change', () => {
+      const orgId = orgSwitcher.value;
+      const assoc = account.organisations.find(o => o.id === orgId);
+      if (assoc) {
+        localStorage.setItem('currentOrg', orgId);
+        localStorage.setItem('orgRole', assoc.role);
+        renderTickets();
+      }
+    });
+    populateSwitcher();
+    renderTickets();
+  </script>
 </body>
 </html>
