@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact - CoreQueue</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --bg-light: #2a2a3e;
+      --text: #e0e0fa;
+      --accent: #1E90FF;
+      --accent-light: #4F8CFF;
+      --input-bg: #2a2a3e;
+      --input-border: #3a3a4e;
+      --success: #4CAF50;
+    }
+    body.light {
+      --bg: #f2f2f2;
+      --bg-light: #fff;
+      --text: #1e1e2f;
+      --input-bg: #fff;
+      --input-border: #ccc;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+    body{display:flex;background:var(--bg);color:var(--text);min-height:100vh;}
+    aside.sidebar{width:240px;background:var(--bg-light);display:flex;flex-direction:column;justify-content:space-between;padding:2rem 1rem;}
+    aside.sidebar h2{color:var(--accent);font-size:1.5rem;text-align:center;margin-bottom:2rem;}
+    nav.nav-links a{display:block;color:var(--text);text-decoration:none;padding:0.75rem 1rem;margin-bottom:0.5rem;border-radius:4px;font-size:0.95rem;transition:background .2s;}
+    nav.nav-links a:hover,nav.nav-links a.active{background:var(--accent);color:#fff;}
+    .settings-group{border-top:1px solid var(--bg);padding-top:1rem;margin-top:1rem;}
+    .settings-group a{display:block;color:var(--text);text-decoration:none;padding:.5rem 0;transition:color .2s;}
+    .settings-group a:hover{color:var(--accent);}
+    main.main{flex:1;padding:2rem;}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+    .header a.back{color:var(--accent-light);text-decoration:none;font-size:.9rem;margin-right:1rem;}
+    .header h1{font-size:2rem;flex:1;}
+    .header-controls{display:flex;gap:.5rem;}
+    .header-controls button{background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:4px;cursor:pointer;transition:background .2s;font-size:.9rem;}
+    .header-controls button:hover{background:var(--accent-light);}
+    .card{background:var(--bg-light);border-radius:8px;padding:1.5rem;box-shadow:0 4px 8px rgba(0,0,0,0.3);}
+    .card h2{font-size:1.25rem;margin-bottom:1rem;}
+    .form-group{display:flex;flex-direction:column;margin-bottom:1rem;}
+    .form-group label{font-size:.9rem;margin-bottom:.5rem;}
+    .form-group input,.form-group select{padding:.5rem;background:var(--input-bg);border:1px solid var(--input-border);border-radius:4px;color:var(--text);font-size:1rem;}
+    .btn-save{background:var(--success);color:#fff;border:none;padding:.75rem 1.2rem;border-radius:4px;cursor:pointer;font-size:1rem;transition:background .2s;}
+    .btn-save:hover{background:#42b35a;}
+    @media(max-width:768px){body{flex-direction:column;}aside.sidebar{width:100%;flex-direction:row;justify-content:space-around;padding:1rem;}main.main{padding:1rem;}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="top-nav">
+      <h2>CoreQueue</h2>
+      <nav class="nav-links">
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations" class="active">Organisations</a>
+      </nav>
+    </div>
+    <div class="settings-group">
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header">
+      <a href="#" class="back" id="backLink">← Back</a>
+      <h1>Contact</h1>
+      <div class="header-controls">
+        <button class="theme-toggle">🌙</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Contact Details</h2>
+      <form id="contactForm">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email">
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input type="tel" id="phone">
+        </div>
+        <div class="form-group">
+          <label for="note">Note</label>
+          <textarea id="note" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="role">Role</label>
+          <select id="role">
+            <option value="controller">Controller</option>
+            <option value="customer">Customer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div style="display:flex;gap:.5rem;">
+            <input type="text" id="password" placeholder="leave blank to auto-generate" style="flex:1;">
+            <button type="button" id="genPass" class="btn-save" style="background:var(--accent);">Gen</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-save">Save Contact</button>
+      </form>
+    </div>
+  </main>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get('id');
+    const index = params.get('contact');
+    const org = getOrganisation(orgId);
+    if (!org) {
+      window.location.href = '/Organisations/organisations';
+    }
+    document.getElementById('backLink').href = `/Organisations/single_organisation?id=${orgId}`;
+    const roleSelect = document.getElementById('role');
+    if (index !== null) {
+      const contact = org.contacts[index];
+      if (contact) {
+        document.getElementById('name').value = contact.name || '';
+        document.getElementById('email').value = contact.email || '';
+        document.getElementById('phone').value = contact.phone || '';
+        document.getElementById('note').value = contact.note || '';
+        roleSelect.value = contact.role || 'customer';
+      }
+    } else {
+      roleSelect.value = org.contacts.length === 0 ? 'controller' : 'customer';
+    }
+    document.getElementById('genPass').addEventListener('click', () => {
+      document.getElementById('password').value = generatePassword();
+    });
+    document.getElementById('contactForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const contact = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        note: document.getElementById('note').value.trim(),
+        role: roleSelect.value
+      };
+      const password = document.getElementById('password').value.trim();
+      if (index !== null) {
+        updateContact(orgId, parseInt(index, 10), contact);
+      } else {
+        addContact(orgId, contact);
+      }
+      const generated = upsertAccount(contact.email, password || null, contact.name, orgId, contact.role);
+      if (!password) {
+        alert(`Invite password for ${contact.email}: ${generated}`);
+      }
+      window.location.href = `/Organisations/single_organisation?id=${orgId}`;
+    });
+  </script>
+</body>
+</html>
