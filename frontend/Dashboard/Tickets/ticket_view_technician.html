@@ -6,11 +6,12 @@
   <title>Ticket Details - CoreQueue</title>
   <style>
     :root { --bg:#1e1e2f; --bg-light:#2a2a3e; --text:#e0e0fa; --accent:#1E90FF; --accent-light:#4F8CFF; --input-bg:#2a2a3e; --input-border:#3a3a4e; --success:#4CAF50; --warning:#FFC107; --danger:#FF4C4C; }
+    body.light{--bg:#f2f2f2;--bg-light:#fff;--text:#1e1e2f;--input-bg:#fff;--input-border:#ccc;}
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
     body{display:flex;background:var(--bg);color:var(--text);min-height:100vh;}
     aside.sidebar{width:240px;background:var(--bg-light);display:flex;flex-direction:column;justify-content:space-between;padding:1.5rem 1rem;}
     .top-nav h2{color:var(--accent);font-size:1.25rem;text-align:center;margin-bottom:1.5rem;}
-    nav.nav-links a{display:block;color:var(--text);text-decoration:none;padding:.5rem .75rem;margin-bottom:.5rem;border-radius:4px;transition:background .2s;font-size:.9rem;}
+    nav.nav-links a{display:block;color:var(--text);text-decoration:none;padding:0.75rem 1rem;margin-bottom:0.5rem;border-radius:4px;transition:background .2s;font-size:0.95rem;}
     nav.nav-links a:hover{background:var(--accent);color:#fff;}
     .settings-group a{display:block;color:var(--text);text-decoration:none;padding:.5rem 0;transition:color .2s;font-size:0.95rem;}
     .settings-group a:hover{color:var(--accent);}
@@ -59,19 +60,19 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#">Organisations</a>
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations">Organisations</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
-      <a href="#" class="back">← Back</a>
+      <a href="/Dashboard/dashboard" class="back">← Back</a>
       <h1>Ticket #00013 - Customer Test</h1>
       <button class="edit-btn">Edit Ticket</button>
       <button class="resolve-btn">Mark Resolved</button>
@@ -213,6 +214,11 @@
     </div>
 
   </main>
+  <script src="../../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+  </script>
 </body>
 <script>
   const tabs = document.querySelectorAll('.tabs button');

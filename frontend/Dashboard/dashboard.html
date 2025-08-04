@@ -14,9 +14,14 @@
       --critical: #FF4C4C;
       --open: #4CAF50;
       --in-progress: #FFC107;
-      --resolved: #2196F3;
-      --archived: #888;
-    }
+    --resolved: #2196F3;
+    --archived: #888;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
     *, *::before, *::after {
       margin: 0;
       padding: 0;
@@ -52,6 +57,7 @@
       margin-bottom: 0.5rem;
       border-radius: 4px;
       transition: background 0.2s;
+      font-size: 0.95rem;
     }
     .nav-links a.active,
     .nav-links a:hover { background: var(--accent); color: #fff; }
@@ -194,23 +200,23 @@
     <div>
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#" class="active">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#">Organisations</a>
+        <a href="/Dashboard/dashboard" class="active">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations">Organisations</a>
       </nav>
     </div>
     <div class="settings-group nav-links">
-      <a href="#">Settings</a>
-      <a href="#">Customer View</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="/Dashboard/customer_dashboard">Customer View</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
       <h1>Dashboard</h1>
       <div class="header-controls">
-        <button class="btn-toggle">🌙</button>
-        <button class="btn-create">+ Create New Ticket</button>
+        <button class="btn-toggle theme-toggle">🌙</button>
+        <a class="btn-create" href="/Dashboard/Tickets/new_ticket_technician">+ Create New Ticket</a>
       </div>
     </div>
     <section class="cards">
@@ -237,7 +243,7 @@
     </div>
 
     <div class="tickets-list">
-      <div class="ticket-card">
+      <a class="ticket-card" href="/Dashboard/Tickets/ticket_view_technician">
         <div class="ticket-header">
           <span class="ticket-code">#00013</span>
           <span class="ticket-title">Customer test ticket with long title...</span>
@@ -246,8 +252,13 @@
         </div>
         <div class="ticket-body">Een kort overzicht van de inhoud van het ticket voor context.</div>
         <div class="ticket-meta">Customer: test@domain.com | 5-6-2025</div>
-      </div>
+      </a>
     </div>
   </main>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+  </script>
 </body>
 </html>
