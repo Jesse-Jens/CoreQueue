@@ -14,9 +14,14 @@
       --critical: #FF4C4C;
       --open: #4CAF50;
       --in-progress: #FFC107;
-      --resolved: #2196F3;
-      --archived: #888;
-    }
+    --resolved: #2196F3;
+    --archived: #888;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
     *, *::before, *::after {
       margin: 0;
       padding: 0;
@@ -52,6 +57,7 @@
       margin-bottom: 0.5rem;
       border-radius: 4px;
       transition: background 0.2s;
+      font-size: 0.95rem;
     }
     .nav-links a.active,
     .nav-links a:hover { background: var(--accent); color: #fff; }
@@ -150,6 +156,11 @@
       border-radius: 8px;
       padding: 1rem;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      border: none;
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+      color: inherit;
     }
     .ticket-header {
       display: flex;
@@ -194,30 +205,30 @@
     <div>
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#" class="active">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#">Organisations</a>
+        <a href="/Dashboard/dashboard" class="active">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations">Organisations</a>
       </nav>
     </div>
     <div class="settings-group nav-links">
-      <a href="#">Settings</a>
-      <a href="#">Customer View</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="/Dashboard/customer_dashboard">Customer View</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
       <h1>Dashboard</h1>
       <div class="header-controls">
-        <button class="btn-toggle">🌙</button>
-        <button class="btn-create">+ Create New Ticket</button>
+        <button class="btn-toggle theme-toggle">🌙</button>
+        <a class="btn-create" href="/Dashboard/Tickets/new_ticket_technician">+ Create New Ticket</a>
       </div>
     </div>
     <section class="cards">
-      <div class="card"><h3>Total Tickets</h3><p class="number">128</p></div>
-      <div class="card"><h3>Open Tickets</h3><p class="number">42</p></div>
-      <div class="card"><h3>In Progress</h3><p class="number">16</p></div>
-      <div class="card"><h3>Resolved</h3><p class="number">55</p></div>
+      <div class="card"><h3>Total Tickets</h3><p class="number" id="tech-total">0</p></div>
+      <div class="card"><h3>Open Tickets</h3><p class="number" id="tech-open">0</p></div>
+      <div class="card"><h3>In Progress</h3><p class="number" id="tech-progress">0</p></div>
+      <div class="card"><h3>Resolved</h3><p class="number" id="tech-resolved">0</p></div>
     </section>
 
     <div class="filters">
@@ -236,18 +247,50 @@
       <button class="status-button archived">Archived</button>
     </div>
 
-    <div class="tickets-list">
-      <div class="ticket-card">
-        <div class="ticket-header">
-          <span class="ticket-code">#00013</span>
-          <span class="ticket-title">Customer test ticket with long title...</span>
-          <span class="label label-open">Open</span>
-          <span class="label label-priority">Medium</span>
-        </div>
-        <div class="ticket-body">Een kort overzicht van de inhoud van het ticket voor context.</div>
-        <div class="ticket-meta">Customer: test@domain.com | 5-6-2025</div>
-      </div>
-    </div>
+    <div class="tickets-list" id="ticketList"></div>
   </main>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    const list = document.getElementById('ticketList');
+    const totalEl = document.getElementById('tech-total');
+    const openEl = document.getElementById('tech-open');
+    const progressEl = document.getElementById('tech-progress');
+    const resolvedEl = document.getElementById('tech-resolved');
+    const tickets = getTickets();
+
+    function renderStats() {
+      totalEl.textContent = tickets.length;
+      openEl.textContent = tickets.filter(t => t.status === 'Open').length;
+      progressEl.textContent = tickets.filter(t => t.status === 'In Progress').length;
+      resolvedEl.textContent = tickets.filter(t => t.status === 'Resolved').length;
+    }
+
+    function renderTickets() {
+      list.innerHTML = '';
+      tickets.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'ticket-card';
+        btn.type = 'button';
+        btn.innerHTML = `
+          <div class="ticket-header">
+            <span class="ticket-code">#${t.id}</span>
+            <span class="ticket-title">${t.title}</span>
+            <span class="label label-open">${t.status}</span>
+          </div>
+          <div class="ticket-body">${t.description.substring(0,80)}</div>
+          <div class="ticket-meta">${t.organisation || ''} | ${formatDate(t.created)}</div>
+        `;
+        btn.addEventListener('click', () => {
+          window.location.href = `/Dashboard/Tickets/ticket_view_technician?id=${t.id}`;
+        });
+        list.appendChild(btn);
+      });
+    }
+
+    renderStats();
+    renderTickets();
+  </script>
 </body>
 </html>
