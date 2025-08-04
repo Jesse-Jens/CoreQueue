@@ -14,14 +14,21 @@
       --input-bg: #2a2a3e;
       --input-border: #3a3a4e;
       --danger: #FF4C4C;
-      --success: #4CAF50;
-      --info: #2196F3;
-    }
+    --success: #4CAF50;
+    --info: #2196F3;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+    --input-bg: #fff;
+    --input-border: #ccc;
+  }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
     body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
     aside.sidebar { width:240px; background:var(--bg-light); display:flex; flex-direction:column; justify-content:space-between; padding:2rem 1rem; }
     aside.sidebar h2 { color:var(--accent); font-size:1.5rem; text-align:center; margin-bottom:2rem; }
-    nav.nav-links a { display:block; color:var(--text); text-decoration:none; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:4px; transition:background .2s; }
+    nav.nav-links a { display:block; color:var(--text); text-decoration:none; padding:0.75rem 1rem; margin-bottom:0.5rem; border-radius:4px; font-size:0.95rem; transition:background .2s; }
     nav.nav-links a:hover, nav.nav-links a.active { background:var(--accent); color:#fff; }
     .settings-group { border-top:1px solid var(--bg); padding-top:1rem; margin-top:1rem; }
     .settings-group a { display:block; color:var(--text); text-decoration:none; padding:.5rem 0; transition:color .2s; }
@@ -52,6 +59,7 @@
     .badge-customer { background:var(--info); }
     .btn-add-contact { background:var(--accent); color:#fff; border:none; padding:.4rem .8rem; border-radius:4px; cursor:pointer; font-size:.85rem; transition:background .2s; }
     .btn-add-contact:hover { background:var(--accent-light); }
+    .contact-form { margin-top:1rem; display:none; }
     /* Wiki */
     .wiki-area { margin-top:1rem; }
     .wiki-area textarea { width:100%; min-height:12rem; background:var(--input-bg); border:1px solid var(--input-border); border-radius:4px; padding:.75rem; font-size:1rem; color:var(--text); }
@@ -84,14 +92,14 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#" class="active">Organisations</a>
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations" class="active">Organisations</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
@@ -109,36 +117,24 @@
     <section id="general" class="content-section active">
       <div class="card">
         <h2>General Information</h2>
-        <div class="form-group"><label>Name</label><input type="text" placeholder="Organization Name"></div>
-        <div class="form-group"><label>Address</label><input type="text" placeholder="Street, City, ZIP"></div>
-        <div class="form-group"><label>Phone</label><input type="tel" placeholder="+31 6 12345678"></div>
-        <div class="form-group"><label>Email</label><input type="email" placeholder="contact@org.com"></div>
-        <div class="form-group"><label>Additional Info</label><textarea placeholder="Extra information..."></textarea></div>
+        <div class="form-group"><label>Name</label><input id="orgName" type="text" placeholder="Organization Name"></div>
+        <div class="form-group"><label>Address</label><input id="orgAddress" type="text" placeholder="Street, City, ZIP"></div>
+        <div class="form-group"><label>Phone</label><input id="orgPhone" type="tel" placeholder="+31 6 12345678"></div>
+        <div class="form-group"><label>Email</label><input id="orgEmail" type="email" placeholder="contact@org.com"></div>
+        <div class="form-group"><label>Additional Info</label><textarea id="orgNote" placeholder="Extra information..."></textarea></div>
       </div>
     </section>
     <section id="contacts" class="content-section">
       <div class="card">
         <h2>Contacts</h2>
         <button class="btn-add-contact">+ Add Contact</button>
-        <div class="contacts-list">
-          <div class="contact-card">
-            <h3>John Doe</h3>
-            <p>john@org.com</p>
-            <p>+31 6 98765432</p>
-            <span class="badge badge-controller">Controller</span>
-            <div class="contact-actions" style="margin-top:.75rem; text-align:right;">
-              <button class="btn-link edit">Edit</button>
-              <button class="btn-link delete">Delete</button>
-            </div>
-          </div>
-          </div>
-          <div class="contact-card">
-            <h3>Jane Smith</h3>
-            <p>jane@org.com</p>
-            <p>+31 6 12349876</p>
-            <span class="badge badge-customer">Customer</span>
-          </div>
-        </div>
+        <form id="contactForm" class="contact-form">
+          <div class="form-group"><label>Name</label><input type="text" id="contactName" required></div>
+          <div class="form-group"><label>Email</label><input type="email" id="contactEmail"></div>
+          <div class="form-group"><label>Phone</label><input type="tel" id="contactPhone"></div>
+          <button type="submit" class="btn-save">Save Contact</button>
+        </form>
+        <div class="contacts-list" id="contactsList"></div>
       </div>
     </section>
     <section id="wiki" class="content-section">
@@ -168,6 +164,60 @@
         document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
         document.getElementById(tab).classList.add('active');
       });
+    });
+  </script>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get('id');
+    const org = getOrganisation(orgId);
+    if (!org) {
+      window.location.href = '/Organisations/organisations';
+    }
+    document.getElementById('orgName').value = org.name || '';
+    document.getElementById('orgAddress').value = org.address || '';
+    document.getElementById('orgPhone').value = org.phone || '';
+    document.getElementById('orgEmail').value = org.email || '';
+    document.getElementById('orgNote').value = org.note || '';
+    document.querySelector('.btn-save').addEventListener('click', () => {
+      updateOrganisation(orgId, {
+        name: document.getElementById('orgName').value.trim(),
+        address: document.getElementById('orgAddress').value.trim(),
+        phone: document.getElementById('orgPhone').value.trim(),
+        email: document.getElementById('orgEmail').value.trim(),
+        note: document.getElementById('orgNote').value.trim()
+      });
+    });
+    function renderContacts() {
+      const list = document.getElementById('contactsList');
+      list.innerHTML = '';
+      const current = getOrganisation(orgId);
+      current.contacts.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'contact-card';
+        div.innerHTML = `<h3>${c.name}</h3><p>${c.email || ''}</p><p>${c.phone || ''}</p>`;
+        list.appendChild(div);
+      });
+    }
+    renderContacts();
+    const form = document.getElementById('contactForm');
+    document.querySelector('.btn-add-contact').addEventListener('click', () => {
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    });
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('contactName').value.trim();
+      if (!name) return;
+      addContact(orgId, {
+        name,
+        email: document.getElementById('contactEmail').value.trim(),
+        phone: document.getElementById('contactPhone').value.trim()
+      });
+      form.reset();
+      form.style.display = 'none';
+      renderContacts();
     });
   </script>
 </body>
