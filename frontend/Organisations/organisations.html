@@ -13,9 +13,14 @@
       --accent-light: #4F8CFF;
       --danger: #FF4C4C;
       --warning: #FFC107;
-      --success: #4CAF50;
-      --info: #2196F3;
-    }
+    --success: #4CAF50;
+    --info: #2196F3;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
     *, *::before, *::after {
       margin: 0;
       padding: 0;
@@ -44,13 +49,7 @@
       margin-bottom: 2rem;
     }
     nav.nav-links a {
-      display: block;
-      color: var(--text);
-      text-decoration: none;
-      padding: .75rem 1rem;
-      margin-bottom: .5rem;
-      border-radius: 4px;
-      transition: background .2s;
+      display:block; color: var(--text); text-decoration:none; padding:0.75rem 1rem; margin-bottom:0.5rem; border-radius:4px; font-size:0.95rem; transition: background .2s;
     }
     nav.nav-links a:hover,
     nav.nav-links a.active {
@@ -189,14 +188,14 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#" class="active">Organisations</a>
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations" class="active">Organisations</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
 
@@ -204,7 +203,7 @@
     <div class="header">
       <h1>Organisations</h1>
       <div class="header-controls">
-        <button class="btn-toggle">🌙</button>
+        <button class="btn-toggle theme-toggle">🌙</button>
         <button class="btn-add">+ Add Organisation</button>
       </div>
     </div>
@@ -230,5 +229,29 @@
       </table>
     </div>
   </main>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    document.querySelector('.btn-add').addEventListener('click', () => {
+      window.location.href = '/Organisations/new_organisation';
+    });
+    const tbody = document.querySelector('tbody');
+    const orgs = getOrganisations()
+      .filter(o => !o.archived)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    orgs.forEach(o => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${o.name}</td>
+        <td>${(o.contacts[0] && o.contacts[0].name) || ''}</td>
+        <td>${o.email || ''}</td>
+        <td>${o.phone || ''}</td>
+        <td class="actions">
+          <button class="btn-link" onclick="window.location.href='/Organisations/single_organisation?id=${o.id}'">View</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  </script>
 </body>
 </html>
