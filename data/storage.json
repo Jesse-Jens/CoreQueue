@@ -1,0 +1,8 @@
+{
+  "accounts": [],
+  "organisations": [],
+  "tickets": [],
+  "nextTicketId": 1,
+  "nextOrgId": 1,
+  "adminPassword": "admin123"
+}
