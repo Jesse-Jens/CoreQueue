@@ -12,15 +12,22 @@
       --accent: #1E90FF;
       --accent-light: #4F8CFF;
       --input-bg: #2a2a3e;
-      --input-border: #3a3a4e;
-      --success: #4CAF50;
-    }
+    --input-border: #3a3a4e;
+    --success: #4CAF50;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+    --input-bg: #fff;
+    --input-border: #ccc;
+  }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
     body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
     aside.sidebar { width:240px; background:var(--bg-light); display:flex; flex-direction:column; justify-content:space-between; padding:2rem 1rem; }
     .top-nav { }
     .top-nav h2 { color:var(--accent); font-size:1.5rem; text-align:center; margin-bottom:2rem; }
-    nav.nav-links a { display:block; color:var(--text); text-decoration:none; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:4px; transition:background .2s; }
+    nav.nav-links a { display:block; color:var(--text); text-decoration:none; padding:0.75rem 1rem; margin-bottom:0.5rem; border-radius:4px; transition:background .2s; font-size:0.95rem; }
     nav.nav-links a:hover, nav.nav-links a.active { background:var(--accent); color:#fff; }
     .settings-group a { display:block; color:var(--text); text-decoration:none; padding:.5rem 0; transition:color .2s; }
     .settings-group a:hover { color:var(--accent); }
@@ -75,44 +82,44 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
-        <a href="#">Inventory</a>
-        <a href="#">Organisations</a>
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations">Organisations</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
-      <a href="javascript:history.back()" class="back">← Back</a>
+      <a href="/Dashboard/dashboard" class="back">← Back</a>
       <h1>Create New Ticket</h1>
     </div>
     <div class="card">
       <h2>Ticket Details</h2>
-      <form class="form-grid">
+      <form class="form-grid" id="ticketForm">
         <div class="form-group full">
           <label for="title">Title</label>
-          <input type="text" id="title" placeholder="Short summary of issue">
+          <input type="text" id="title" placeholder="Short summary of issue" required>
         </div>
         <div class="form-group">
           <label for="organisation">Organisation</label>
           <select id="organisation">
-            <option>Select organisation…</option>
+            <option value="">Select organisation…</option>
           </select>
         </div>
         <div class="form-group">
           <label for="contact">Contact Person</label>
           <select id="contact">
-            <option>Select contact…</option>
+            <option value="">Select contact…</option>
           </select>
         </div>
         <div class="form-group">
           <label for="technician">Assign Technician (optional)</label>
           <select id="technician">
-            <option>Unassigned</option>
+            <option value="">Unassigned</option>
           </select>
         </div>
         <div class="form-group">
@@ -126,7 +133,7 @@
         </div>
         <div class="form-group full">
           <label for="description">Problem Description</label>
-          <textarea id="description" placeholder="Describe the issue in detail…"></textarea>
+          <textarea id="description" placeholder="Describe the issue in detail…" required></textarea>
         </div>
         <div class="form-group full">
           <label for="attachment">Upload Files (optional)</label>
@@ -140,5 +147,46 @@
       </form>
     </div>
   </main>
+  <script src="../../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    const orgSelect = document.getElementById('organisation');
+    const contactSelect = document.getElementById('contact');
+    getOrganisations().forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.id;
+      opt.textContent = o.name;
+      orgSelect.appendChild(opt);
+    });
+    orgSelect.addEventListener('change', () => {
+      contactSelect.innerHTML = '<option value="">Select contact…</option>';
+      const org = getOrganisation(orgSelect.value);
+      if (org) {
+        org.contacts.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.email;
+          opt.textContent = c.name;
+          contactSelect.appendChild(opt);
+        });
+      }
+    });
+    document.getElementById('ticketForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      if (!title || !description) return;
+      const id = createTicket({
+        title,
+        organisation: document.getElementById('organisation').value,
+        contact: document.getElementById('contact').options[document.getElementById('contact').selectedIndex]?.text || '',
+        contactEmail: document.getElementById('contact').value,
+        technician: document.getElementById('technician').value,
+        priority: document.getElementById('priority').value,
+        description
+      });
+      window.location.href = `/Dashboard/Tickets/ticket_view_technician?id=${id}`;
+    });
+  </script>
 </body>
 </html>

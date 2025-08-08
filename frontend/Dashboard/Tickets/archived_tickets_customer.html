@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archived Tickets - CoreQueue</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --bg-light: #2a2a3e;
+      --text: #e0e0fa;
+      --accent: #1E90FF;
+      --accent-light: #4F8CFF;
+      --archived: #888;
+    }
+    body.light {
+      --bg: #f2f2f2;
+      --bg-light: #fff;
+      --text: #1e1e2f;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+    body { display:flex; flex-direction:column; background:var(--bg); color:var(--text); min-height:100vh; }
+    header { display:flex; align-items:center; justify-content:space-between; padding:1rem 2rem; background:var(--bg-light); }
+    header h1 { font-size:1.5rem; }
+    .controls-left { display:flex; gap:0.5rem; align-items:center; }
+    .controls-left button { background:var(--accent); color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer; transition:background 0.2s; font-size:0.9rem; }
+    .controls-left button:hover { background:var(--accent-light); }
+    .controls-right a { background:var(--bg-light); color:var(--text); text-decoration:none; padding:0.5rem 1rem; border-radius:4px; margin-left:0.5rem; font-size:0.9rem; transition:background 0.2s; }
+    .controls-right a:hover { background:var(--accent); color:#fff; }
+    main { flex:1; padding:1rem 2rem; max-width:900px; margin:0 auto; }
+    .filters { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:1rem; margin-bottom:1rem; justify-content:center; max-width:700px; margin-left:auto; margin-right:auto; }
+    .filters select { padding:0.5rem; border:none; border-radius:4px; background:var(--bg-light); color:var(--text); cursor:pointer; }
+    .tickets-list { display:grid; gap:1rem; max-width:700px; margin:0 auto; }
+    .ticket-card { background:var(--bg-light); border-radius:8px; padding:1rem; box-shadow:0 2px 4px rgba(0,0,0,0.3); border:none; text-align:left; width:100%; cursor:pointer; color:inherit; }
+    .ticket-header { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; }
+    .ticket-code { font-weight:bold; }
+    .ticket-title { font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+    .label { padding:0.2rem 0.6rem; border-radius:4px; font-size:0.8rem; font-weight:500; color:#fff; }
+    .label-archived { background:var(--archived); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Archived Tickets</h1>
+    <div class="controls-left">
+      <button class="theme-toggle">🌙</button>
+    </div>
+    <div class="controls-right">
+      <a href="/Dashboard/customer_dashboard">Back</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
+  </header>
+  <main>
+    <div class="filters">
+      <select id="filterPriority"><option value="">All Priorities</option></select>
+      <select id="filterTechnician"><option value="">All Technicians</option></select>
+      <select id="filterSort">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="priority-high">Priority High-Low</option>
+        <option value="priority-low">Priority Low-High</option>
+      </select>
+    </div>
+    <div class="tickets-list" id="ticketList"></div>
+  </main>
+  <script src="../../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('customer');
+    const list = document.getElementById('ticketList');
+    const prioritySelect = document.getElementById('filterPriority');
+    const techSelect = document.getElementById('filterTechnician');
+    const sortSelect = document.getElementById('filterSort');
+    const userEmail = localStorage.getItem('userEmail');
+    const account = findAccount(userEmail);
+
+    function getArchivedTickets() {
+      const orgId = localStorage.getItem('currentOrg');
+      const role = localStorage.getItem('orgRole');
+      return getTickets().filter(t => {
+        if (t.status !== 'Archived') return false;
+        if (role === 'controller') return t.organisation === orgId;
+        return t.organisation === orgId && t.contactEmail === userEmail;
+      });
+    }
+
+    function populateFilters() {
+      prioritySelect.innerHTML = '<option value="">All Priorities</option>';
+      techSelect.innerHTML = '<option value="">All Technicians</option>';
+      const tickets = getArchivedTickets();
+      ALL_PRIORITIES.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        prioritySelect.appendChild(opt);
+      });
+      const techs = [...new Set(tickets.map(t => t.technician).filter(Boolean))];
+      techs.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        techSelect.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const priority = prioritySelect.value;
+      const tech = techSelect.value;
+      const sort = sortSelect.value;
+      let filtered = getArchivedTickets();
+      if (priority) filtered = filtered.filter(t => t.priority === priority);
+      if (tech) filtered = filtered.filter(t => t.technician === tech);
+      filtered.sort((a,b) => {
+        switch(sort) {
+          case 'oldest':
+            return new Date(a.created) - new Date(b.created);
+          case 'priority-high':
+            return priorityWeight(b.priority) - priorityWeight(a.priority);
+          case 'priority-low':
+            return priorityWeight(a.priority) - priorityWeight(b.priority);
+          default:
+            return new Date(b.created) - new Date(a.created);
+        }
+      });
+      renderList(filtered);
+    }
+
+    function renderList(items) {
+      list.innerHTML = '';
+      items.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'ticket-card';
+        btn.type = 'button';
+        btn.innerHTML = `
+          <div class="ticket-header">
+            <span class="ticket-code">#${t.id}</span>
+            <span class="ticket-title">${t.title}</span>
+            <span class="label label-archived">${t.status}</span>
+          </div>
+          <div class="ticket-body">${t.description.substring(0,80)}</div>
+          <div class="ticket-meta">${formatDate(t.created)}</div>
+        `;
+        btn.addEventListener('click', () => {
+          window.location.href = `/Dashboard/Tickets/ticket_view_customer?id=${t.id}`;
+        });
+        list.appendChild(btn);
+      });
+    }
+
+    populateFilters();
+    applyFilters();
+    [prioritySelect, techSelect, sortSelect].forEach(sel => sel.addEventListener('change', applyFilters));
+  </script>
+</body>
+</html>

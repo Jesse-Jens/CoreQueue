@@ -10,8 +10,13 @@
       --bg-light: #2a2a3e;
       --text: #e0e0fa;
       --accent: #1E90FF;
-      --danger: #FF4C4C;
-    }
+    --danger: #FF4C4C;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
     body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
     aside.sidebar {
@@ -22,9 +27,9 @@
     .top-nav h2 { color:var(--accent); font-size:1.25rem; text-align:center; margin-bottom:1rem; }
     nav.nav-links a {
       display:block; color:var(--text);
-      text-decoration:none; padding:.5rem 1rem;
-      border-radius:4px; margin-bottom:.5rem;
-      font-size:.9rem; transition:background .2s;
+      text-decoration:none; padding:0.75rem 1rem;
+      border-radius:4px; margin-bottom:0.5rem;
+      font-size:0.95rem; transition:background .2s;
     }
     nav.nav-links a:hover { background:var(--accent); color:#fff; }
     .settings-group a {
@@ -121,48 +126,39 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
+        <a href="/Dashboard/customer_dashboard">Dashboard</a>
       </nav>
     </div>
     <div class="settings-group">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
     <div class="header">
-      <a href="#" class="back">← Back</a>
-      <h1>Ticket #00013 - Customer Test</h1>
+      <a href="/Dashboard/customer_dashboard" class="back">← Back</a>
+      <h1>Ticket #<span id="ticketCode"></span> - <span id="ticketTitle"></span></h1>
       <button class="resolve-btn">Mark Resolved</button>
     </div>
     <div class="ticket-meta">
-      <p><strong>Organisation:</strong> Test Comp</p>
-      <p><strong>Contact:</strong> Test User</p>
-      <p><strong>Technician:</strong> John Doe</p>
-      <p><strong>Status:</strong> <span class="badge status-open">Open</span></p>
-      <p><strong>Priority:</strong> <span class="badge priority-medium">Medium</span></p>
+      <p><strong>Organisation:</strong> <span id="metaOrg"></span></p>
+      <p><strong>Contact:</strong> <span id="metaContact"></span></p>
+      <p><strong>Technician:</strong> <span id="metaTech"></span></p>
+      <p><strong>Status:</strong> <span class="badge" id="metaStatus"></span></p>
+      <p><strong>Priority:</strong> <span class="badge" id="metaPriority"></span></p>
     </div>
     <div class="problem-desc">
       <h2>Problem Description</h2>
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec.</p>
+      <p id="problemDesc"></p>
     </div>
     <div class="tabs">
       <button class="active" data-target="updates">Updates</button>
       <button data-target="files">Files</button>
     </div>
     <div id="updates" class="section active">
-      <div class="list">
-        <div class="list-item note-external">
-          <p>We hebben uw probleem onderzocht en een oplossing uitgewerkt.</p>
-          <span>05-06-2025 12:30</span>
-        </div>
-        <div class="list-item note-external">
-          <p>Uw ticket is in behandeling genomen door technicus John Doe.</p>
-          <span>05-06-2025 12:00</span>
-        </div>
-      </div>
-      <textarea rows="3" placeholder="Schrijf uw opmerking..."></textarea>
-      <button class="btn">Add Note</button>
+      <div class="list" id="notesList"></div>
+      <textarea rows="3" id="customerNote" placeholder="Schrijf uw opmerking..."></textarea>
+      <button class="btn" id="addNoteBtn">Add Note</button>
     </div>
     <div id="files" class="section">
       <div class="list">
@@ -176,7 +172,10 @@
       </div>
     </div>
   </main>
+  <script src="../../js/app.js"></script>
   <script>
+    initTheme();
+    requireLogin('customer');
     document.querySelectorAll('.tabs button').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tabs button').forEach(t => t.classList.remove('active'));
@@ -184,6 +183,44 @@
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(tab.dataset.target).classList.add('active');
       });
+    });
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const ticket = getTicket(id);
+    if (ticket) {
+      document.getElementById('ticketCode').textContent = id;
+      document.getElementById('ticketTitle').textContent = ticket.title;
+      document.getElementById('metaOrg').textContent = getOrganisation(ticket.organisation)?.name || ticket.organisation;
+      document.getElementById('metaContact').textContent = ticket.contact;
+      document.getElementById('metaTech').textContent = ticket.technician;
+      const statusSpan = document.getElementById('metaStatus');
+      statusSpan.textContent = ticket.status;
+      statusSpan.classList.add('status-open');
+      const priSpan = document.getElementById('metaPriority');
+      priSpan.textContent = ticket.priority || '';
+      if (ticket.priority) priSpan.classList.add(`priority-${ticket.priority.toLowerCase()}`);
+      document.getElementById('problemDesc').textContent = ticket.description;
+      renderNotes();
+    }
+
+    function renderNotes() {
+      const list = document.getElementById('notesList');
+      list.innerHTML = '';
+      ticket.notes.filter(n => n.type === 'external').forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'list-item note-external';
+        div.innerHTML = `<p>${n.message}</p><span>${formatDate(n.time)}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    document.getElementById('addNoteBtn').addEventListener('click', () => {
+      const msg = document.getElementById('customerNote').value.trim();
+      if (!msg) return;
+      addNote(id, 'external', msg);
+      document.getElementById('customerNote').value = '';
+      ticket.notes = getTicket(id).notes;
+      renderNotes();
     });
   </script>
 </body>
