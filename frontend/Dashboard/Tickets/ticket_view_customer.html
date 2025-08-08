@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Ticket View - CoreQueue</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --bg-light: #2a2a3e;
+      --text: #e0e0fa;
+      --accent: #1E90FF;
+      --danger: #FF4C4C;
+      --success: #4CAF50;
+      --await-customer: #FF9800;
+      --await-technician: #00BCD4;
+      --await-external: #9C27B0;
+    }
+    body.light {
+      --bg: #f2f2f2;
+      --bg-light: #fff;
+      --text: #1e1e2f;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+    body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
+    aside.sidebar {
+      width:240px; background:var(--bg-light);
+      display:flex; flex-direction:column; justify-content:space-between;
+      padding:1rem;
+    }
+    .top-nav h2 { color:var(--accent); font-size:1.25rem; text-align:center; margin-bottom:1rem; }
+    nav.nav-links a {
+      display:block; color:var(--text);
+      text-decoration:none; padding:0.75rem 1rem;
+      border-radius:4px; margin-bottom:0.5rem;
+      font-size:0.95rem; transition:background .2s;
+    }
+    nav.nav-links a:hover { background:var(--accent); color:#fff; }
+    .settings-group a {
+      display:block; color:var(--text);
+      text-decoration:none; padding:.5rem 1rem;
+      font-size:.9rem; transition:color .2s;
+    }
+    .settings-group a:hover { color:var(--accent); }
+    main.main { flex:1; padding:2rem; }
+    .header {
+      display:flex; align-items:center;
+      justify-content:space-between; margin-bottom:1.5rem;
+    }
+    .header a.back { color:var(--accent); text-decoration:none; font-size:.9rem; margin-right:1rem; }
+    .header h1 { font-size:1.75rem; flex:1; }
+    .header button.resolve-btn {
+      background:var(--danger); color:#fff;
+      border:none; padding:.5rem 1rem;
+      border-radius:4px; cursor:pointer;
+      font-size:.9rem;
+    }
+    .ticket-meta {
+      background:var(--bg-light); padding:1rem;
+      border-radius:6px; margin-bottom:1rem;
+      display:grid; grid-template-columns:1fr 1fr; gap:1rem;
+    }
+    .ticket-meta p { font-size:.9rem; margin:.25rem 0; }
+    .badge {
+      padding:.2rem .6rem; border-radius:4px;
+      font-size:.75rem; color:#fff; display:inline-block;
+    }
+    .status-open { background:var(--success); }
+    .status-in-progress { background:var(--accent); }
+    .status-awaiting-customer { background:var(--await-customer); }
+    .status-awaiting-technician { background:var(--await-technician); }
+    .status-awaiting-external-provider { background:var(--await-external); }
+    .status-resolved { background:var(--danger); }
+    .status-archived { background:#6c757d; }
+    .problem-desc {
+      background:var(--bg-light); padding:1rem;
+      border-radius:6px; margin-bottom:1.5rem;
+    }
+    .problem-desc h2 { margin-bottom:.5rem; }
+    .tabs {
+      display:flex; border-bottom:1px solid var(--bg);
+      margin-bottom:1rem;
+    }
+    .tabs button {
+      background:none; border:none;
+      padding:.75rem 1.5rem; cursor:pointer;
+      color:var(--text); font-size:1rem;
+      transition:color .2s;
+    }
+    .tabs button.active {
+      color:#fff; border-bottom:3px solid var(--accent);
+    }
+    .section { display:none; }
+    .section.active { display:block; }
+    .list {
+      background:var(--bg-light); padding:1rem;
+      border-radius:6px; margin-top:1rem;
+    }
+    .list-item {
+      padding:.75rem; border-bottom:1px solid var(--bg);
+      display:flex; justify-content:space-between;
+      align-items:center;
+    }
+    .list-item:last-child { border-bottom:none; }
+    textarea {
+      width:100%; padding:.5rem;
+      background:var(--bg-light); border:1px solid var(--bg);
+      border-radius:4px; color:var(--text);
+      font-size:1rem; resize:vertical;
+      margin-top:1rem;
+    }
+    .btn {
+      background:var(--accent); color:#fff;
+      border:none; padding:.5rem 1rem;
+      border-radius:4px; cursor:pointer;
+      transition:background .2s; font-size:.95rem;
+      margin-top:.75rem;
+    }
+    .btn:hover { background:#4F8CFF; }
+    @media(max-width:768px) {
+      body { flex-direction:column; }
+      aside.sidebar { width:100%; flex-direction:row; justify-content:space-around; }
+      main.main { padding:1rem; }
+      .tabs { flex-wrap:wrap; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="top-nav">
+      <h2>CoreQueue</h2>
+      <nav class="nav-links">
+        <a href="/Dashboard/customer_dashboard">Dashboard</a>
+      </nav>
+    </div>
+    <div class="settings-group">
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header">
+      <a href="/Dashboard/customer_dashboard" class="back">← Back</a>
+      <h1>Ticket #<span id="ticketCode"></span> - <span id="ticketTitle"></span></h1>
+      <button class="resolve-btn">Mark Resolved</button>
+    </div>
+    <div class="ticket-meta">
+      <p><strong>Organisation:</strong> <span id="metaOrg"></span></p>
+      <p><strong>Contact:</strong> <span id="metaContact"></span></p>
+      <p><strong>Technician:</strong> <span id="metaTech"></span></p>
+      <p><strong>Status:</strong> <span class="badge" id="metaStatus"></span></p>
+      <p><strong>Priority:</strong> <span class="badge" id="metaPriority"></span></p>
+    </div>
+    <div class="problem-desc">
+      <h2>Problem Description</h2>
+      <p id="problemDesc"></p>
+    </div>
+    <div class="tabs">
+      <button class="active" data-target="updates">Updates</button>
+      <button data-target="files">Files</button>
+    </div>
+    <div id="updates" class="section active">
+      <div class="list" id="notesList"></div>
+      <textarea rows="3" id="customerNote" placeholder="Schrijf uw opmerking..."></textarea>
+      <button class="btn" id="addNoteBtn">Add Note</button>
+    </div>
+    <div id="files" class="section">
+      <div class="list">
+        <div class="list-item">
+          <p>error_screenshot.png</p>
+          <div>
+            <button class="btn">Preview</button>
+            <button class="btn">Download</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="../../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('customer');
+    document.querySelectorAll('.tabs button').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    let ticket = getTicket(id);
+    if (ticket) {
+      document.getElementById('ticketCode').textContent = id;
+      document.getElementById('ticketTitle').textContent = ticket.title;
+      document.getElementById('metaOrg').textContent = getOrganisation(ticket.organisation)?.name || ticket.organisation;
+      document.getElementById('metaContact').textContent = ticket.contact;
+      document.getElementById('metaTech').textContent = ticket.technician;
+      const statusSpan = document.getElementById('metaStatus');
+      statusSpan.textContent = ticket.status;
+      statusSpan.className = `badge status-${ticket.status.toLowerCase().replace(/\s+/g,'-')}`;
+      const priSpan = document.getElementById('metaPriority');
+      priSpan.textContent = ticket.priority || '';
+      if (ticket.priority) priSpan.classList.add(`priority-${ticket.priority.toLowerCase()}`);
+      document.getElementById('problemDesc').textContent = ticket.description;
+      renderNotes();
+    }
+
+    document.querySelector('.resolve-btn').addEventListener('click', () => {
+      updateTicket(id, { status: 'Resolved' });
+      const statusSpan = document.getElementById('metaStatus');
+      statusSpan.textContent = 'Resolved';
+      statusSpan.className = 'badge status-resolved';
+    });
+
+    function renderNotes() {
+      const list = document.getElementById('notesList');
+      list.innerHTML = '';
+      ticket.notes.filter(n => n.type !== 'internal' && !n.hidden).forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<p><strong>${n.author}:</strong> ${n.message}</p><span>${formatDate(n.time)}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    document.getElementById('addNoteBtn').addEventListener('click', () => {
+      const msg = document.getElementById('customerNote').value.trim();
+      if (!msg) return;
+      const note = {
+        type: 'external',
+        message: msg,
+        author: currentUserName(),
+        timeSpent: 0
+      };
+      addNote(id, note);
+      updateTicket(id, { status: 'Awaiting Technician' });
+      ticket = getTicket(id);
+      const statusSpan = document.getElementById('metaStatus');
+      statusSpan.textContent = ticket.status;
+      statusSpan.className = `badge status-${ticket.status.toLowerCase().replace(/\s+/g,'-')}`;
+      document.getElementById('customerNote').value = '';
+      renderNotes();
+    });
+  </script>
+</body>
+</html>
