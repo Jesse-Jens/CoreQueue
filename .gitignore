@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+corequeue.log
+
+# data is runtime-generated but include initial storage
+# ignore changes to storage.json after initial commit
+/data/storage.json
+/data/cloudflare-token
