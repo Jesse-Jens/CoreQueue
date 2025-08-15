@@ -12,8 +12,15 @@
       --accent: #1E90FF;
       --accent-light: #4F8CFF;
       --input-bg: #2a2a3e;
-      --input-border: #3a3a4e;
-    }
+    --input-border: #3a3a4e;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+    --input-bg: #fff;
+    --input-border: #ccc;
+  }
     *, *::before, *::after {
       margin: 0;
       padding: 0;
@@ -44,7 +51,7 @@
       max-width: 360px;
       position: relative;
     }
-    .dark-toggle {
+    .theme-toggle {
       position: absolute;
       top: 1rem;
       right: 1rem;
@@ -57,7 +64,7 @@
       font-size: 1rem;
       transition: background 0.2s;
     }
-    .dark-toggle:hover {
+    .theme-toggle:hover {
       background: var(--accent-light);
     }
     .login-header {
@@ -122,7 +129,7 @@
 <body>
   <div class="site-title">CoreQueue</div>
   <div class="login-container">
-    <button class="dark-toggle">🌙</button>
+    <button class="theme-toggle">🌙</button>
     <div class="login-header">
       <h2>Login</h2>
     </div>
@@ -141,5 +148,20 @@
       <button type="submit" class="btn-login">Log In</button>
     </form>
   </div>
+  <script src="js/app.js"></script>
+  <script>
+    initTheme();
+    document.querySelector('.login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const redirect = login(email, password);
+      if (redirect) {
+        window.location.href = redirect;
+      } else {
+        alert('Invalid credentials');
+      }
+    });
+  </script>
 </body>
 </html>
