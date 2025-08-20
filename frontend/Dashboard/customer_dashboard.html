@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard - CoreQueue</title>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --bg-light: #2a2a3e;
+      --text: #e0e0fa;
+      --accent: #1E90FF;
+      --accent-light: #4F8CFF;
+      --open: #4CAF50;
+      --in-progress: #FFC107;
+      --awaiting-customer: #FF9800;
+      --awaiting-technician: #00BCD4;
+      --awaiting-external: #9C27B0;
+      --resolved: #2196F3;
+      --archived: #888;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background: var(--bg-light);
+    }
+    header h1 {
+      font-size: 1.5rem;
+    }
+    .controls-left {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .controls-left button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 0.9rem;
+    }
+    .controls-left button:hover { background: var(--accent-light); }
+    .controls-left select {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      background: var(--bg-light);
+      color: var(--text);
+      border: 1px solid var(--accent);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .controls-left select:hover { border-color: var(--accent-light); }
+    .controls-right button {
+      background: var(--bg-light);
+      color: var(--text);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 0.9rem;
+    }
+    .controls-right a {
+      background: var(--bg-light);
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      margin-left: 0.5rem;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .controls-right a:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+    .controls-right button:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+    main {
+      flex: 1;
+      padding: 1rem 2rem;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .filters select {
+      padding: 0.5rem;
+      border: none;
+      border-radius: 4px;
+      background: var(--bg-light);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .status-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .status-button {
+      padding: 0.4rem 0.8rem;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      background: var(--bg-light);
+      color: var(--text);
+      transition: filter 0.2s, background 0.2s;
+    }
+    .status-button:hover { filter: brightness(0.9); }
+    .status-button.active { border-color: var(--accent); }
+    .status-button[data-status=""].active { background: var(--accent); color: #fff; }
+    .status-button.open { background: var(--open); color: #fff; }
+    .status-button.in-progress { background: var(--in-progress); color: #000; }
+    .status-button.awaiting-customer { background: var(--awaiting-customer); color: #000; }
+    .status-button.awaiting-technician { background: var(--awaiting-technician); color: #fff; }
+    .status-button.awaiting-external-provider { background: var(--awaiting-external); color: #fff; }
+    .status-button.resolved { background: var(--resolved); color: #fff; }
+    .status-button.archived { background: var(--archived); color: #fff; }
+    .tickets-list {
+      display: grid;
+      gap: 1rem;
+    }
+    .ticket-card {
+      background: var(--bg-light);
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      border: none;
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+      color: inherit;
+    }
+    .ticket-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .ticket-code {
+      font-weight: bold;
+    }
+    .ticket-title {
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    .label {
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #fff;
+    }
+    .label-open { background: var(--open); }
+    .label-in-progress { background: var(--in-progress); color: #000; }
+    .label-awaiting-customer { background: var(--awaiting-customer); color: #000; }
+    .label-awaiting-technician { background: var(--awaiting-technician); }
+    .label-awaiting-external-provider { background: var(--awaiting-external); }
+    .label-resolved { background: var(--resolved); }
+    .label-archived { background: var(--archived); }
+    .ticket-body {
+      margin-bottom: 0.5rem;
+    }
+    .ticket-meta {
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--bg-light);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .card .number { font-size: 2.5rem; font-weight: bold; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dashboard</h1>
+    <div class="controls-left">
+      <button id="backToTech" style="display:none">← Back</button>
+      <button class="theme-toggle">🌙</button>
+      <button class="btn-create" id="createTicket">+ Create new ticket</button>
+      <select id="orgSwitcher"></select>
+    </div>
+    <div class="controls-right">
+      <a href="/Dashboard/customer_dashboard">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
+  </header>
+  <main>
+    <section class="cards">
+      <div class="card"><h3>Total Tickets</h3><p class="number" id="stat-total">0</p></div>
+      <div class="card"><h3>Open Tickets</h3><p class="number" id="stat-open">0</p></div>
+      <div class="card"><h3>In Progress</h3><p class="number" id="stat-progress">0</p></div>
+      <div class="card"><h3>Resolved</h3><p class="number" id="stat-resolved">0</p></div>
+    </section>
+    <div class="filters">
+      <select id="filterStatus"><option value="">All Statuses</option></select>
+      <select id="filterPriority"><option value="">All Priorities</option></select>
+      <select id="filterSort">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="priority-high">Priority High-Low</option>
+        <option value="priority-low">Priority Low-High</option>
+      </select>
+    </div>
+    <div class="status-buttons">
+      <button class="status-button active" data-status="">All Active</button>
+      <button class="status-button open" data-status="Open">Open</button>
+      <button class="status-button in-progress" data-status="In Progress">In Progress</button>
+      <button class="status-button awaiting-customer" data-status="Awaiting Customer">Awaiting Customer</button>
+      <button class="status-button awaiting-technician" data-status="Awaiting Technician">Awaiting Technician</button>
+      <button class="status-button awaiting-external-provider" data-status="Awaiting External Provider">Awaiting External Provider</button>
+      <button class="status-button resolved" data-status="Resolved">Resolved</button>
+      <button class="status-button archived" data-status="Archived">Archived</button>
+    </div>
+    <div class="tickets-list" id="ticketList"></div>
+  </main>
+  <script src="../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('customer');
+    const list = document.getElementById('ticketList');
+    const orgSwitcher = document.getElementById('orgSwitcher');
+    const createBtn = document.getElementById('createTicket');
+    const backBtn = document.getElementById('backToTech');
+    const totalEl = document.getElementById('stat-total');
+    const openEl = document.getElementById('stat-open');
+    const progressEl = document.getElementById('stat-progress');
+    const resolvedEl = document.getElementById('stat-resolved');
+    const statusSelect = document.getElementById('filterStatus');
+    const prioritySelect = document.getElementById('filterPriority');
+    const sortSelect = document.getElementById('filterSort');
+    const statusButtons = document.querySelectorAll('.status-button');
+    const userEmail = localStorage.getItem('userEmail');
+    const account = findAccount(userEmail);
+    let statusFilter = '';
+    if (localStorage.getItem('role') === 'technician') {
+      backBtn.style.display = 'inline-block';
+      backBtn.addEventListener('click', () => { window.location.href = '/Dashboard/dashboard'; });
+    }
+    createBtn.addEventListener('click', () => {
+      window.location.href = '/Dashboard/Tickets/new_ticket_customer';
+    });
+    function populateSwitcher() {
+      orgSwitcher.innerHTML = '';
+      (account?.organisations || []).forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = getOrganisation(o.id)?.name || o.id;
+        orgSwitcher.appendChild(opt);
+      });
+      const current = localStorage.getItem('currentOrg');
+      if (current) orgSwitcher.value = current;
+    }
+    function getRelevantTickets() {
+      const orgId = localStorage.getItem('currentOrg');
+      const role = localStorage.getItem('orgRole');
+      return getTickets().filter(t => {
+        if (role === 'controller') return t.organisation === orgId;
+        return t.organisation === orgId && t.contactEmail === userEmail;
+      });
+    }
+
+    function populateFilters() {
+      statusSelect.innerHTML = '<option value="">All Statuses</option>';
+      prioritySelect.innerHTML = '<option value="">All Priorities</option>';
+      ALL_STATUSES.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        statusSelect.appendChild(opt);
+      });
+      ALL_PRIORITIES.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        prioritySelect.appendChild(opt);
+      });
+    }
+
+    function renderStats() {
+      const tickets = getRelevantTickets();
+      totalEl.textContent = tickets.length;
+      openEl.textContent = tickets.filter(t => t.status === 'Open').length;
+      progressEl.textContent = tickets.filter(t => ['In Progress','Awaiting Customer','Awaiting Technician','Awaiting External Provider'].includes(t.status)).length;
+      resolvedEl.textContent = tickets.filter(t => t.status === 'Resolved').length;
+    }
+
+    function applyFilters() {
+      const statusSel = statusSelect.value;
+      const priority = prioritySelect.value;
+      const sort = sortSelect.value;
+      let filtered = getRelevantTickets().slice();
+      const status = statusFilter || statusSel;
+      if (!status) filtered = filtered.filter(t => t.status !== 'Archived');
+      if (status) filtered = filtered.filter(t => t.status === status);
+      if (priority) filtered = filtered.filter(t => t.priority === priority);
+      filtered.sort((a,b) => {
+        switch(sort) {
+          case 'oldest':
+            return new Date(a.created) - new Date(b.created);
+          case 'priority-high':
+            return priorityWeight(b.priority) - priorityWeight(a.priority);
+          case 'priority-low':
+            return priorityWeight(a.priority) - priorityWeight(b.priority);
+          default:
+            return new Date(b.created) - new Date(a.created);
+        }
+      });
+      renderList(filtered);
+    }
+
+    function renderList(items) {
+      list.innerHTML = '';
+      items.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'ticket-card';
+        btn.type = 'button';
+        const statusClass = `label-${t.status.toLowerCase().replace(/\s+/g, '-')}`;
+        btn.innerHTML = `
+          <div class="ticket-header">
+            <span class="ticket-code">#${t.id}</span>
+            <span class="ticket-title">${t.title}</span>
+            <span class="label ${statusClass}">${t.status}</span>
+          </div>
+          <div class="ticket-body">${t.description.substring(0,80)}</div>
+          <div class="ticket-meta">${formatDate(t.created)}</div>
+        `;
+        btn.addEventListener('click', () => {
+          window.location.href = `/Dashboard/Tickets/ticket_view_customer?id=${t.id}`;
+        });
+        list.appendChild(btn);
+      });
+    }
+    orgSwitcher.addEventListener('change', () => {
+      const orgId = orgSwitcher.value;
+      const assoc = account.organisations.find(o => o.id === orgId);
+      if (assoc) {
+        localStorage.setItem('currentOrg', orgId);
+        localStorage.setItem('orgRole', assoc.role);
+        populateFilters();
+        renderStats();
+        applyFilters();
+      }
+    });
+    populateSwitcher();
+    populateFilters();
+    renderStats();
+    applyFilters();
+
+    [prioritySelect, sortSelect].forEach(sel => sel.addEventListener('change', applyFilters));
+    statusSelect.addEventListener('change', () => {
+      statusFilter = '';
+      statusButtons.forEach(b => b.classList.remove('active'));
+      statusButtons[0].classList.add('active');
+      applyFilters();
+    });
+
+    statusButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const status = btn.dataset.status;
+        if (status === 'Archived') {
+          window.location.href = '/Dashboard/Tickets/archived_tickets_customer';
+          return;
+        }
+        statusFilter = status;
+        statusButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilters();
+      });
+    });
+  </script>
+</body>
+</html>
