@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Details - CoreQueue</title>
+  <style>
+    :root { --bg:#1e1e2f; --bg-light:#2a2a3e; --text:#e0e0fa; --accent:#1E90FF; --accent-light:#4F8CFF; --input-bg:#2a2a3e; --input-border:#3a3a4e; --success:#4CAF50; --warning:#FFC107; --danger:#FF4C4C; --await-customer:#FF9800; --await-technician:#00BCD4; --await-external:#9C27B0; }
+    body.light{--bg:#f2f2f2;--bg-light:#fff;--text:#1e1e2f;--input-bg:#fff;--input-border:#ccc;}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+    body{display:flex;background:var(--bg);color:var(--text);min-height:100vh;}
+    aside.sidebar{width:240px;background:var(--bg-light);display:flex;flex-direction:column;justify-content:space-between;padding:1.5rem 1rem;}
+    .top-nav h2{color:var(--accent);font-size:1.25rem;text-align:center;margin-bottom:1.5rem;}
+    nav.nav-links a{display:block;color:var(--text);text-decoration:none;padding:0.75rem 1rem;margin-bottom:0.5rem;border-radius:4px;transition:background .2s;font-size:0.95rem;}
+    nav.nav-links a:hover{background:var(--accent);color:#fff;}
+    .settings-group a{display:block;color:var(--text);text-decoration:none;padding:.5rem 0;transition:color .2s;font-size:0.95rem;}
+    .settings-group a:hover{color:var(--accent);}
+    main.main{flex:1;padding:2rem;}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+    .header a.back{color:var(--accent-light);text-decoration:none;font-size:.9rem;margin-right:1rem;}
+    .header h1{font-size:2rem;flex:1;}
+    .header button{margin-left:.5rem;padding:.5rem 1rem;border:none;border-radius:4px;cursor:pointer;font-size:.9rem;}
+    .edit-btn{background:var(--accent);color:#fff;}
+    .resolve-btn{background:var(--danger);color:#fff;}
+    .ticket-meta{background:var(--bg-light);padding:1rem;border-radius:6px;margin-bottom:1rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    .ticket-meta h2{grid-column:1/-1;margin-bottom:.5rem;}
+    .ticket-meta p{font-size:.9rem;margin:.25rem 0;}
+    .badge{padding:.2rem .6rem;border-radius:4px;font-size:.75rem;color:#fff;display:inline-block;}
+    .status-open{background:var(--success);} .status-in-progress{background:var(--accent);} .status-awaiting-customer{background:var(--await-customer);} .status-awaiting-technician{background:var(--await-technician);} .status-awaiting-external-provider{background:var(--await-external);} .status-resolved{background:var(--danger);} .status-archived{background:#6c757d;}
+    .priority-low{background:#6c757d;} .priority-medium{background:var(--accent);} .priority-high{background:var(--warning);} .priority-critical{background:var(--danger);}
+    .problem-desc{background:var(--bg-light);padding:1rem;border-radius:6px;margin-bottom:1.5rem;}
+    .problem-desc h2{margin-bottom:.5rem;}
+    .tabs{display:flex;border-bottom:1px solid var(--bg);margin-bottom:1rem;}
+    .tabs button{background:none;border:none;padding:.75rem 1.5rem;cursor:pointer;color:var(--text);font-size:1rem;transition:color .2s;}
+    .tabs button.active{color:#fff;border-bottom:3px solid var(--accent);}
+    .section{display:none;} .section.active{display:block;}
+    .form-group{margin-bottom:1rem;}
+    .form-row{display:flex;gap:1rem;align-items:flex-end;}
+    label{display:block;font-size:.9rem;margin-bottom:.5rem;}
+    input,textarea,select{width:100%;padding:.5rem;background:var(--input-bg);border:1px solid var(--input-border);border-radius:4px;color:var(--text);font-size:1rem;}
+    textarea{resize:vertical;}
+    .btn{background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:4px;cursor:pointer;transition:background .2s;font-size:0.95rem;}
+    .btn:hover{background:var(--accent-light);}
+    .list{background:var(--bg-light);padding:1rem;border-radius:6px;margin-top:1rem;}
+    .list-item{padding:.75rem;border-bottom:1px solid var(--bg);display:flex;justify-content:space-between;align-items:center;}
+    .list-item:last-child{border-bottom:none;}
+    .file-item{padding:.75rem;display:flex;justify-content:space-between;align-items:flex-start;background:var(--bg-light);border-radius:6px;margin-bottom:.5rem;}
+    .file-preview{width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:.75rem;}
+    .file-actions{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;margin-left:auto;}
+    .btn-link{background:var(--accent);color:#fff;border:none;padding:.25rem .5rem;border-radius:4px;cursor:pointer;}
+    .btn-link:hover{background:var(--accent-light);}
+    .btn-remove{background:var(--danger);color:#fff;border:none;padding:.25rem .5rem;border-radius:4px;cursor:pointer;}
+    .btn-remove:hover{background:#e04c4c;}
+    .note-external{border-left:4px solid var(--warning);padding-left:.75rem;margin-bottom:.5rem;background:var(--bg-light);border-radius:4px;}
+    .note-customer{border-left:4px solid var(--await-technician);padding-left:.75rem;margin-bottom:.5rem;background:var(--bg-light);border-radius:4px;}
+    .note-internal{border-left:4px solid var(--accent);padding-left:.75rem;margin-bottom:.5rem;background:var(--bg-light);border-radius:4px;}
+    .status-select{padding:.2rem .6rem;border-radius:4px;border:none;color:#fff;font-size:.75rem;}
+    .toggle-container{display:flex;align-items:center;gap:.5rem;}
+    .toggle{position:relative;width:40px;height:20px;}
+    .toggle input{opacity:0;width:0;height:0;}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:20px;transition:.4s;}
+    .slider::before{position:absolute;content:"";height:16px;width:16px;left:2px;bottom:2px;background:white;transition:.4s;border-radius:50%;}
+    .toggle input:checked + .slider{background:var(--accent);} .toggle input:checked + .slider::before{transform:translateX(20px);}
+    .hidden-tag{background:#555;color:#fff;padding:0 .4rem;border-radius:4px;font-size:.7rem;margin-left:.5rem;}
+    @media(max-width:768px){body{flex-direction:column;}aside.sidebar{width:100%;flex-direction:row;justify-content:space-around;}main.main{padding:1rem;} .tabs{flex-wrap:wrap;}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="top-nav">
+      <h2>CoreQueue</h2>
+      <nav class="nav-links">
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/Organisations/organisations">Organisations</a>
+      </nav>
+    </div>
+    <div class="settings-group">
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header">
+      <a href="/Dashboard/dashboard" class="back">← Back</a>
+      <h1>Ticket #<span id="ticketCode"></span> - <span id="ticketTitle"></span></h1>
+      <button class="edit-btn">Edit Ticket</button>
+      <button class="resolve-btn">Mark Resolved</button>
+    </div>
+    <div class="ticket-meta">
+      <h2>Ticket Details</h2>
+      <p>Organisation: <strong id="metaOrg"></strong></p>
+      <p>Contact: <strong id="metaContact"></strong></p>
+      <p>Technician: <strong id="metaTech"></strong></p>
+      <p>Status: <select id="statusSelect" class="status-select"></select></p>
+      <p>Priority: <span class="badge" id="metaPriority"></span></p>
+    </div>
+    <div class="problem-desc">
+      <h2>Problem Description</h2>
+      <p id="problemDesc"></p>
+    </div>
+
+    <div class="tabs">
+      <button class="active" data-target="updates">Updates</button>
+      <button data-target="time">Time Tracking</button>
+      <button data-target="inventory">Inventory</button>
+      <button data-target="files">Files</button>
+    </div>
+
+    <div id="updates" class="section active">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="noteType">Note Type</label>
+          <select id="noteType">
+            <option>Internal</option>
+            <option>External</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="template">Template (optional)</label>
+          <select id="template">
+            <option>None</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="timeSpent">Time Spent (minutes)</label>
+          <input type="number" id="timeSpent" value="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="message">Message</label>
+        <textarea id="message" rows="3" placeholder="Write your note here..."></textarea>
+      </div>
+      <div id="emailSection" style="display:none;">
+        <div class="form-group">
+          <label for="toEmail">Aan</label>
+          <input type="email" id="toEmail" placeholder="Recipient email" />
+        </div>
+        <div class="form-group">
+          <div class="toggle-container">
+            <span>CC</span>
+            <label class="toggle">
+              <input id="ccToggle" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <input type="text" id="ccEmail" placeholder="cc@example.com, ..." style="display:none;" />
+        </div>
+        <div class="form-group">
+          <div class="toggle-container">
+            <span>BCC</span>
+            <label class="toggle">
+              <input id="bccToggle" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <input type="text" id="bccEmail" placeholder="bcc@example.com, ..." style="display:none;" />
+        </div>
+        <div class="form-group">
+          <div class="toggle-container">
+            <span>Hide from Customer</span>
+            <label class="toggle">
+              <input id="hideNote" type="checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="addNoteBtn">Add Note</button>
+
+      <div class="list" id="notesList"></div>
+    </div>
+
+    <div id="time" class="section">
+      <div class="form-group form-row">
+        <label for="logMinutes">Minutes</label>
+        <input type="number" id="logMinutes" value="0" />
+        <label for="logDescription">Description</label>
+        <input type="text" id="logDescription" placeholder="Work performed..." />
+        <button class="btn" id="logTimeBtn">Log Time</button>
+      </div>
+      <div class="list" id="timeList"></div>
+    </div>
+
+    <div id="inventory" class="section">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="itemSelect">Select Item</label>
+          <select id="itemSelect"></select>
+        </div>
+        <div class="form-group">
+          <label for="itemQty">Quantity</label>
+          <input type="number" id="itemQty" value="1" />
+        </div>
+        <div class="form-group">
+          <label for="itemStatus">Status</label>
+          <select id="itemStatus">
+            <option>Added</option>
+            <option>Assign</option>
+            <option>Delivered</option>
+          </select>
+        </div>
+        <button class="btn" id="addInventoryBtn">Apply</button>
+      </div>
+      <div class="list" id="inventoryList"></div>
+    </div>
+
+    <div id="files" class="section">
+      <div class="form-group">
+        <label for="fileUpload">Upload Files</label>
+        <input type="file" id="fileUpload" />
+      </div>
+      <div class="list" id="filesContainer"></div>
+    </div>
+
+  </main>
+  <script src="../../js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    let ticket = getTicket(id);
+    const statusSelect = document.getElementById('statusSelect');
+    ALL_STATUSES.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      statusSelect.appendChild(opt);
+    });
+
+    function updateStatusSelect() {
+      statusSelect.value = ticket.status;
+      statusSelect.className = `status-select status-${ticket.status.toLowerCase().replace(/\s+/g,'-')}`;
+    }
+
+    if (ticket) {
+      document.getElementById('ticketCode').textContent = id;
+      document.getElementById('ticketTitle').textContent = ticket.title;
+      document.getElementById('metaOrg').textContent = getOrganisation(ticket.organisation)?.name || ticket.organisation;
+      document.getElementById('metaContact').textContent = ticket.contact;
+      document.getElementById('metaTech').textContent = ticket.technician;
+      const priSpan = document.getElementById('metaPriority');
+      priSpan.textContent = ticket.priority || '';
+      if (ticket.priority) priSpan.classList.add(`priority-${ticket.priority.toLowerCase()}`);
+      document.getElementById('problemDesc').textContent = ticket.description;
+      updateStatusSelect();
+      renderNotes();
+      handleTypeChange();
+    }
+
+    statusSelect.addEventListener('change', () => {
+      updateTicket(id, { status: statusSelect.value });
+      ticket = getTicket(id);
+      updateStatusSelect();
+    });
+
+    document.querySelector('.edit-btn').addEventListener('click', () => {
+      window.location.href = `/Dashboard/Tickets/new_ticket_technician?id=${id}`;
+    });
+
+    document.querySelector('.resolve-btn').addEventListener('click', () => {
+      updateTicket(id, { status: 'Resolved' });
+      ticket = getTicket(id);
+      updateStatusSelect();
+    });
+
+    function renderNotes() {
+      const list = document.getElementById('notesList');
+      list.innerHTML = '';
+      ticket.notes.forEach(n => {
+        const div = document.createElement('div');
+        let cls;
+        if (n.type === 'internal') {
+          cls = 'note-internal';
+        } else {
+          cls = n.source === 'customer' ? 'note-customer' : 'note-external';
+        }
+        div.className = `list-item ${cls}`;
+        const hiddenTag = n.hidden ? ' <span class="hidden-tag">Hidden</span>' : '';
+        const timeInfo = n.timeSpent ? ` <em>(${n.timeSpent}m)</em>` : '';
+        div.innerHTML = `<p><strong>${n.author}:</strong> ${sanitizeHTML(n.message)}${hiddenTag}${timeInfo}</p><span>${formatDate(n.time)}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    document.getElementById('noteType').addEventListener('change', handleTypeChange);
+
+    function handleTypeChange() {
+      const type = document.getElementById('noteType').value.toLowerCase();
+      const emailSection = document.getElementById('emailSection');
+      if (type === 'external') {
+        emailSection.style.display = 'block';
+        document.getElementById('toEmail').value = ticket.contactEmail || '';
+      } else {
+        emailSection.style.display = 'none';
+        document.getElementById('ccToggle').checked = false;
+        document.getElementById('bccToggle').checked = false;
+        document.getElementById('ccEmail').style.display = 'none';
+        document.getElementById('bccEmail').style.display = 'none';
+        document.getElementById('hideNote').checked = false;
+      }
+    }
+
+    document.getElementById('ccToggle').addEventListener('change', e => {
+      document.getElementById('ccEmail').style.display = e.target.checked ? 'block' : 'none';
+    });
+    document.getElementById('bccToggle').addEventListener('change', e => {
+      document.getElementById('bccEmail').style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('addNoteBtn').addEventListener('click', () => {
+      const type = document.getElementById('noteType').value.toLowerCase();
+      const msg = sanitizeHTML(document.getElementById('message').value.trim());
+      if (!msg) return;
+      const note = {
+        type,
+        message: msg,
+        author: currentUserName(),
+        timeSpent: parseInt(document.getElementById('timeSpent').value, 10) || 0,
+        hidden: document.getElementById('hideNote').checked,
+        source: 'technician'
+      };
+      if (type === 'external') {
+        note.to = document.getElementById('toEmail').value.trim();
+        if (document.getElementById('ccToggle').checked) note.cc = document.getElementById('ccEmail').value.trim();
+        if (document.getElementById('bccToggle').checked) note.bcc = document.getElementById('bccEmail').value.trim();
+      }
+      addNote(id, note);
+      if (type === 'external') {
+        const subject = `#${String(id).padStart(5,'0')} ${ticket.title}`;
+        fetch('/api/mail/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:note.to,cc:note.cc,bcc:note.bcc,subject,body:msg})});
+      }
+      let newStatus = ticket.status;
+      if (ticket.status === 'Awaiting Customer') {
+        newStatus = 'Awaiting Customer';
+      } else if (ticket.status === 'Awaiting External Provider') {
+        if (type === 'external' && !note.hidden) {
+          newStatus = 'Awaiting Customer';
+        } else {
+          newStatus = 'Awaiting External Provider';
+        }
+      } else if (type === 'internal') {
+        newStatus = 'In Progress';
+      } else if (note.hidden) {
+        newStatus = 'Awaiting External Provider';
+      } else {
+        newStatus = 'Awaiting Customer';
+      }
+      updateTicket(id, { status: newStatus });
+      ticket = getTicket(id);
+      updateStatusSelect();
+      document.getElementById('message').value = '';
+      document.getElementById('timeSpent').value = '0';
+      document.getElementById('hideNote').checked = false;
+      renderNotes();
+    });
+
+    const logBtn = document.getElementById('logTimeBtn');
+    logBtn.addEventListener('click', () => {
+      const minutes = parseInt(document.getElementById('logMinutes').value, 10) || 0;
+      const desc = document.getElementById('logDescription').value.trim();
+      if (!minutes && !desc) return;
+      addTimeLog(id, { minutes, description: desc });
+      ticket = getTicket(id);
+      document.getElementById('logMinutes').value = '0';
+      document.getElementById('logDescription').value = '';
+      renderTimeLogs();
+    });
+
+    const invSelect = document.getElementById('itemSelect');
+    getInventory().forEach(it => {
+      const opt = document.createElement('option');
+      opt.value = it.name;
+      opt.textContent = it.name;
+      invSelect.appendChild(opt);
+    });
+    function renderInventory() {
+      const list = document.getElementById('inventoryList');
+      list.innerHTML = '';
+      (ticket.inventory || []).forEach(rec => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<p>${rec.name} x${rec.qty}</p><span>${rec.status}: ${formatDate(rec.time)}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    const addInvBtn = document.getElementById('addInventoryBtn');
+    addInvBtn.addEventListener('click', () => {
+      const name = invSelect.value;
+      const qty = parseInt(document.getElementById('itemQty').value, 10) || 1;
+      const status = document.getElementById('itemStatus').value;
+      addInventory(id, { name, qty, status, time: new Date().toISOString() });
+      ticket = getTicket(id);
+      renderInventory();
+      if (ticket.status !== 'Awaiting Customer' && ticket.status !== 'Awaiting External Provider') {
+        updateTicket(id, { status: 'In Progress' });
+        ticket = getTicket(id);
+        updateStatusSelect();
+      }
+    });
+
+    const fileInput = document.getElementById('fileUpload');
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const base = file.name.replace(/\.[^/.]+$/, '');
+      const ext = file.name.split('.').pop();
+      const custom = prompt('File name', base);
+      const newName = (custom && custom.trim() ? custom.trim() : base) + '.' + ext;
+      const reader = new FileReader();
+      reader.onload = () => {
+        addTicketFile(id, { name: newName, data: reader.result });
+        ticket = getTicket(id);
+        renderFiles();
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = '';
+    });
+
+    function renderFiles() {
+      const container = document.getElementById('filesContainer');
+      container.innerHTML = '';
+      (ticket.files || []).forEach((f, idx) => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        let preview = '';
+        if (f.data && f.data.startsWith('data:image')) {
+          preview = `<img src="${f.data}" alt="Preview" class="file-preview" data-index="${idx}">`;
+        } else {
+          preview = `<div class="file-preview" data-index="${idx}"></div>`;
+        }
+        div.innerHTML = `${preview}<span class="file-name" data-index="${idx}" style="cursor:pointer">${f.name}</span><div class="file-actions"><button class="btn-link download" data-index="${idx}">Download</button><button class="btn-link edit" data-index="${idx}">Rename</button><button class="btn-remove" data-index="${idx}">Remove</button></div>`;
+        container.appendChild(div);
+      });
+      container.querySelectorAll('.file-name, .file-preview').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = el.dataset.index;
+          openPreview((ticket.files || [])[idx].data);
+        });
+      });
+      container.querySelectorAll('.btn-link.download').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const file = (ticket.files || [])[btn.dataset.index];
+          const a = document.createElement('a');
+          a.href = file.data;
+          a.download = file.name;
+          a.click();
+        });
+      });
+      container.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          removeTicketFile(id, btn.dataset.index);
+          ticket = getTicket(id);
+          renderFiles();
+        });
+      });
+      container.querySelectorAll('.btn-link.edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const file = (ticket.files || [])[btn.dataset.index];
+          const base = file.name.replace(/\.[^/.]+$/, '');
+          const ext = file.name.split('.').pop();
+          const custom = prompt('File name', base);
+          if (custom === null) return;
+          const newName = (custom.trim() || base) + '.' + ext;
+          updateTicketFile(id, btn.dataset.index, { name: newName });
+          ticket = getTicket(id);
+          renderFiles();
+        });
+      });
+    }
+
+    function renderTimeLogs() {
+      const list = document.getElementById('timeList');
+      list.innerHTML = '';
+      (ticket.timeLogs || []).forEach(log => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<p>${log.minutes} minutes — ${log.description}</p><span>${formatDate(log.time)}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    // preview modal setup
+    const previewModal = document.createElement('div');
+    previewModal.id = 'previewModal';
+    previewModal.style.display = 'none';
+    previewModal.innerHTML = `<div class="preview-content"><button id="closePreview" style="float:right">✕</button><iframe id="previewFrame" style="width:80vw;height:80vh;border:none;"></iframe></div>`;
+    document.body.appendChild(previewModal);
+    previewModal.addEventListener('click', e => {
+      if (e.target.id === 'previewModal' || e.target.id === 'closePreview') previewModal.style.display = 'none';
+    });
+    function openPreview(src) {
+      document.getElementById('previewFrame').src = src;
+      previewModal.style.display = 'flex';
+      previewModal.style.position = 'fixed';
+      previewModal.style.top = 0;
+      previewModal.style.left = 0;
+      previewModal.style.width = '100%';
+      previewModal.style.height = '100%';
+      previewModal.style.background = 'rgba(0,0,0,0.8)';
+      previewModal.style.alignItems = 'center';
+      previewModal.style.justifyContent = 'center';
+    }
+
+    renderTimeLogs();
+    renderInventory();
+    renderFiles();
+  </script>
+</body>
+<script>
+  const tabs = document.querySelectorAll('.tabs button');
+  const sections = document.querySelectorAll('.section');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      sections.forEach(s=>s.classList.remove('active'));
+      document.getElementById(tab.dataset.target).classList.add('active');
+    });
+  });
+</script>
+</html>
