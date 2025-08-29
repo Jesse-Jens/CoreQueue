@@ -6,11 +6,12 @@
   <title>Settings - CoreQueue</title>
   <style>
     :root { --bg:#1e1e2f; --bg-light:#2a2a3e; --text:#e0e0fa; --accent:#1E90FF; --input-bg:#2a2a3e; --input-border:#3a3a4e; }
+    body.light{--bg:#f2f2f2;--bg-light:#fff;--text:#1e1e2f;--input-bg:#fff;--input-border:#ccc;}
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
     body{display:flex;background:var(--bg);color:var(--text);min-height:100vh;}
     aside.sidebar{width:240px;background:var(--bg-light);display:flex;flex-direction:column;justify-content:space-between;padding:1rem;}
     .top-nav h2{color:var(--accent);font-size:1.25rem;text-align:center;margin-bottom:1rem;}
-    nav.nav-links a{display:block;color:var(--text);text-decoration:none;padding:.5rem 1rem;border-radius:4px;margin-bottom:.5rem;font-size:.9rem;transition:background .2s;}
+    nav.nav-links a{display:block;color:var(--text);text-decoration:none;padding:0.75rem 1rem;border-radius:4px;margin-bottom:0.5rem;font-size:0.95rem;transition:background .2s;}
     nav.nav-links a.active, nav.nav-links a:hover{background:var(--accent);color:#fff;}
     .settings-group a{display:block;color:var(--text);text-decoration:none;padding:.5rem 1rem;border-radius:4px;margin-bottom:.5rem;font-size:.9rem;transition:color .2s;}
     .settings-group a:hover{color:var(--accent);}
@@ -22,6 +23,12 @@
     .form-group{margin-bottom:1rem;}
     label{display:block;font-size:.9rem;margin-bottom:.5rem;}
     input,select{width:100%;padding:.5rem;background:var(--input-bg);border:1px solid var(--input-border);border-radius:4px;color:var(--text);font-size:1rem;}
+    .switch{position:relative;display:inline-block;width:46px;height:24px;vertical-align:middle;margin-right:.5rem;}
+    .switch input{opacity:0;width:0;height:0;}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#888;transition:.2s;border-radius:24px;}
+    .slider:before{position:absolute;content:"";height:20px;width:20px;left:2px;bottom:2px;background:white;transition:.2s;border-radius:50%;}
+    .switch input:checked + .slider{background:var(--accent);}
+    .switch input:checked + .slider:before{transform:translateX(22px);}
     .btn{background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:4px;cursor:pointer;transition:background .2s;font-size:.95rem;}
     .btn:hover{background:#4F8CFF;}
     .section-content{background:var(--bg-light);padding:1rem;border-radius:6px;}
@@ -37,15 +44,15 @@
       <div class="top-nav">
         <h2>CoreQueue</h2>
         <nav class="nav-links">
-          <a href="#">Dashboard</a>
-          <a href="#">Inventory</a>
-          <a href="#">Organisations</a>
+          <a href="/Dashboard/dashboard">Dashboard</a>
+          <a href="/inventory">Inventory</a>
+          <a href="/Organisations/organisations">Organisations</a>
         </nav>
       </div>
     </div>
     <div class="settings-group">
-      <a href="#" class="active">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings" class="active">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
   <main class="main">
@@ -53,6 +60,7 @@
     <div class="tabs">
       <button class="active" data-tab="profile">Profile</button>
       <button data-tab="system">System</button>
+      <button id="cfTab" data-tab="cloudflare" style="display:none">Cloudflare</button>
     </div>
     <section id="profile" class="section active">
       <div class="section-content">
@@ -96,51 +104,34 @@
             <!-- more currencies -->
           </select>
         </div>
-        <div class="form-group">
-          <label for="mailService">Mail Service</label>
-          <select id="mailService">
-            <option value="smtp">SMTP</option>
-            <option value="gmail">Google SMTP</option>
-            <option value="exchange">Exchange</option>
-            <option value="office365">Office365</option>
-            <option value="sendgrid">SendGrid</option>
-            <option value="mailgun">Mailgun</option>
-          </select>
+        <fieldset id="office365Config">
+          <legend>Office365 Mailbox</legend>
+          <div class="form-group"><label for="mailAddress">Mailbox Address</label><input type="email" id="mailAddress"></div>
+          <div class="form-group"><label for="mailTenant">Tenant ID</label><input type="text" id="mailTenant"></div>
+          <div class="form-group"><label for="mailClient">Client ID</label><input type="text" id="mailClient"></div>
+          <div class="form-group"><label for="mailSecret">Client Secret</label><input type="password" id="mailSecret"></div>
+          <button class="btn" id="mailSave">Save Mail Settings</button>
+          <button class="btn" id="mailTest" style="margin-left:.5rem;">Send Test Mail</button>
+        </fieldset>
+        <div class="form-group" id="testAccountGroup">
+          <label>Enable Test Customer</label>
+          <label class="switch"><input id="testAccountToggle" type="checkbox"><span class="slider"></span></label>
         </div>
-        <fieldset id="smtpSettings">
-          <legend>SMTP Settings</legend>
-          <div class="form-group"><label>Host</label><input type="text" placeholder="smtp.example.com"></div>
-          <div class="form-group"><label>Port</label><input type="number" value="587"></div>
-          <div class="form-group"><label>Username</label><input type="text" placeholder="user"></div>
-          <div class="form-group"><label>Password</label><input type="password" placeholder="password"></div>
-        </fieldset>
-        <fieldset id="gmailSettings" class="hidden">
-          <legend>Google SMTP</legend>
-          <div class="form-group"><label>Client ID</label><input type="text" placeholder="Client ID"></div>
-          <div class="form-group"><label>Client Secret</label><input type="password" placeholder="Client Secret"></div>
-          <div class="form-group"><label>Refresh Token</label><input type="text" placeholder="Refresh Token"></div>
-        </fieldset>
-        <fieldset id="exchangeSettings" class="hidden">
-          <legend>Exchange App</legend>
-          <div class="form-group"><label>App ID</label><input type="text" placeholder="GUID"></div>
-          <div class="form-group"><label>App Secret</label><input type="password" placeholder="secret"></div>
-        </fieldset>
-        <fieldset id="office365Settings" class="hidden">
-          <legend>Office365</legend>
-          <div class="form-group"><label>Tenant ID</label><input type="text" placeholder="Tenant GUID"></div>
-          <div class="form-group"><label>Client ID</label><input type="text" placeholder="Client GUID"></div>
-          <div class="form-group"><label>Client Secret</label><input type="password" placeholder="secret"></div>
-        </fieldset>
-        <fieldset id="sendgridSettings" class="hidden">
-          <legend>SendGrid API</legend>
-          <div class="form-group"><label>API Key</label><input type="password" placeholder="SG.xxx"></div>
-        </fieldset>
-        <fieldset id="mailgunSettings" class="hidden">
-          <legend>Mailgun API</legend>
-          <div class="form-group"><label>API Key</label><input type="password" placeholder="key-xxx"></div>
-          <div class="form-group"><label>Domain</label><input type="text" placeholder="mg.example.com"></div>
-        </fieldset>
         <button class="btn">Save System Settings</button>
+      </div>
+    </section>
+    <section id="cloudflare" class="section">
+      <div class="section-content">
+        <div class="form-group">
+          <label for="cfToken">Tunnel Token</label>
+          <input type="text" id="cfToken" placeholder="Cloudflare token">
+        </div>
+        <div class="form-group">
+          <label>Enable Tunnel</label>
+          <label class="switch"><input type="checkbox" id="cfEnable"><span class="slider"></span></label>
+          <span id="cfStatus" style="margin-left:.5rem;">Status: unknown</span>
+        </div>
+        <button class="btn" id="cfSave">Apply</button>
       </div>
     </section>
   </main>
@@ -152,12 +143,119 @@
       document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
       document.getElementById(btn.dataset.tab).classList.add('active');
     }));
-    // Mail service toggle
-    const services = ['smtp','gmail','exchange','office365','sendgrid','mailgun'];
-    document.getElementById('mailService').addEventListener('change', e => {
-      services.forEach(s => document.getElementById(s+'Settings').classList.add('hidden'));
-      document.getElementById(e.target.value+'Settings').classList.remove('hidden');
+  </script>
+  <script src="js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin();
+    const role = localStorage.getItem('role');
+    if (role === 'customer') {
+      const nav = document.querySelector('nav.nav-links');
+      if (nav) nav.innerHTML = '<a href="/Dashboard/customer_dashboard">Dashboard</a>';
+      const sysTab = document.querySelector('[data-tab="system"]');
+      const sysSection = document.getElementById('system');
+      if (sysTab) sysTab.style.display = 'none';
+      if (sysSection) sysSection.remove();
+    }
+    const emailField = document.getElementById('email');
+    const nameField = document.getElementById('displayName');
+    const passField = document.getElementById('password');
+    const userEmail = localStorage.getItem('userEmail');
+    emailField.value = userEmail || '';
+    const account = userEmail && userEmail !== 'admin@corequeue.local' ? findAccount(userEmail) : null;
+    if (account) {
+      nameField.value = account.name || '';
+    }
+    document.querySelector('#profile .btn').addEventListener('click', () => {
+      if (userEmail === 'admin@corequeue.local') {
+        if (passField.value.trim()) {
+          localStorage.setItem('adminPassword', passField.value.trim());
+          if (typeof syncServerStorage === 'function') syncServerStorage();
+          alert('Password updated');
+        }
+      } else if (account) {
+        upsertAccount(userEmail, passField.value.trim() || null, nameField.value.trim());
+        alert('Profile updated');
+      }
     });
+    const cfTab = document.getElementById('cfTab');
+    const cfSection = document.getElementById('cloudflare');
+    if (userEmail === 'admin@corequeue.local') {
+      const cfEnable = document.getElementById('cfEnable');
+      cfTab.style.display = '';
+      fetch('/api/cloudflare').then(r=>r.json()).then(cfg=>{
+        document.getElementById('cfToken').value = cfg.token || '';
+        cfEnable.checked = cfg.enabled;
+        document.getElementById('cfStatus').textContent = 'Status: ' + (cfg.status || 'unknown');
+      });
+        document.getElementById('cfSave').addEventListener('click', ()=>{
+          const token = document.getElementById('cfToken').value.trim();
+          const enable = cfEnable.checked;
+          fetch('/api/cloudflare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token, enable})})
+            .then(r=>{ if(!r.ok) return r.json().then(j=>Promise.reject(j)); })
+            .then(()=>fetch('/api/cloudflare'))
+            .then(r=>r.json()).then(cfg=>{
+              cfEnable.checked = cfg.enabled;
+              document.getElementById('cfStatus').textContent = 'Status: ' + (cfg.status || 'unknown');
+              alert('Cloudflare settings saved');
+            })
+            .catch(err=>{
+              if (err && err.error === 'missing_token') {
+                cfEnable.checked = false;
+                alert('Token is required to enable the tunnel');
+              } else {
+                alert('Failed to save Cloudflare settings');
+              }
+            });
+        });
+      const testToggle = document.getElementById('testAccountToggle');
+      const testAcc = findAccount('test@corequeue.local');
+      if (testAcc) testToggle.checked = !testAcc.blocked;
+      testToggle.addEventListener('change', () => {
+        upsertAccount('test@corequeue.local', undefined, 'Test Controller', null, null, !testToggle.checked);
+      });
+      fetch('/api/mail/config').then(r=>r.json()).then(cfg=>{
+        document.getElementById('mailAddress').value = cfg.address || '';
+        document.getElementById('mailTenant').value = cfg.tenantId || '';
+        document.getElementById('mailClient').value = cfg.clientId || '';
+        document.getElementById('mailSecret').value = cfg.clientSecret || '';
+      });
+      document.getElementById('mailSave').addEventListener('click',()=>{
+        const body={
+          address: document.getElementById('mailAddress').value.trim(),
+          tenantId: document.getElementById('mailTenant').value.trim(),
+          clientId: document.getElementById('mailClient').value.trim(),
+          clientSecret: document.getElementById('mailSecret').value.trim()
+        };
+        fetch('/api/mail/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+          .then(()=>alert('Mail settings saved'))
+          .catch(()=>alert('Failed to save mail settings'));
+      });
+      const testBtn=document.getElementById('mailTest');
+      if(testBtn){
+        testBtn.addEventListener('click',()=>{
+          fetch('/api/mail/test',{method:'POST'}).then(r=>{
+            if(!r.ok) return r.json().then(j=>Promise.reject(j));
+            return r.json();
+          }).then(res=>{
+            alert('Test mail sent. Fetched '+(res.fetched||0)+' messages');
+          }).catch(err=>{
+            if(err && err.error === 'mail_access_denied'){
+              alert('Test mail failed: access denied. Ensure the Azure app has Mail.Send and Mail.ReadWrite application permissions and access to the shared mailbox.');
+            }else{
+              alert('Test mail failed: '+(err.details||err.error||'unknown'));
+            }
+          });
+        });
+      }
+    } else {
+      cfTab.remove();
+      cfSection.remove();
+      const testGroup = document.getElementById('testAccountGroup');
+      if (testGroup) testGroup.remove();
+      const mailFieldset=document.getElementById('office365Config');
+      if(mailFieldset) mailFieldset.remove();
+    }
   </script>
 </body>
 </html>
