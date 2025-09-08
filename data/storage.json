@@ -1,0 +1,53 @@
+{
+  "accounts": [
+    {
+      "email": "test@corequeue.local",
+      "password": "test123",
+      "name": "Test Controller",
+      "organisations": [
+        { "id": "00001", "role": "controller" }
+      ],
+      "blocked": false
+    }
+  ],
+  "organisations": [
+    {
+      "id": "00001",
+      "name": "Test Organisation",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "note": "",
+      "contacts": [
+        {
+          "name": "Test Controller",
+          "email": "test@corequeue.local",
+          "phone": "",
+          "note": "",
+          "role": "controller",
+          "password": "test123",
+          "portalAccess": true,
+          "blocked": false,
+          "primary": true
+        }
+      ],
+      "archived": false,
+      "wiki": "",
+      "files": []
+    }
+  ],
+  "tickets": [],
+  "incomingEmails": [
+    {
+      "id": 1,
+      "from": "customer@example.com",
+      "subject": "Printer issue",
+      "body": "The printer is jammed",
+      "attachments": []
+    }
+  ],
+  "nextTicketId": 1,
+  "nextOrgId": 2,
+  "adminPassword": "admin123",
+  "lastMailSync": "2024-01-01T00:00:00.000Z"
+}

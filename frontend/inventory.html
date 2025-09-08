@@ -13,9 +13,14 @@
       --accent-light: #4F8CFF;
       --danger: #FF4C4C;
       --warning: #FFC107;
-      --success: #4CAF50;
-      --info: #2196F3;
-    }
+    --success: #4CAF50;
+    --info: #2196F3;
+  }
+  body.light {
+    --bg: #f2f2f2;
+    --bg-light: #fff;
+    --text: #1e1e2f;
+  }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
     body { display:flex; background:var(--bg); color:var(--text); min-height:100vh; }
     aside.sidebar {
@@ -28,9 +33,7 @@
       margin-bottom:2rem;
     }
     nav.nav-links a {
-      display:block; color:var(--text); text-decoration:none;
-      padding:.75rem 1rem; margin-bottom:.5rem; border-radius:4px;
-      transition:background .2s;
+      display:block; color:var(--text); text-decoration:none; padding:0.75rem 1rem; margin-bottom:0.5rem; border-radius:4px; font-size:0.95rem; transition:background .2s;
     }
     nav.nav-links a.active, nav.nav-links a:hover { background:var(--accent); color:#fff; }
     .settings-group { border-top:1px solid var(--bg); padding-top:1rem; margin-top:1rem; }
@@ -131,14 +134,14 @@
     <div class="top-nav">
       <h2>CoreQueue</h2>
       <nav class="nav-links">
-        <a href="#">Dashboard</a>
-        <a href="#" class="active">Inventory</a>
-        <a href="#">Organisations</a>
+        <a href="/Dashboard/dashboard">Dashboard</a>
+        <a href="/inventory" class="active">Inventory</a>
+        <a href="/Organisations/organisations">Organisations</a>
       </nav>
     </div>
     <div class="settings-group nav-links">
-      <a href="#">Settings</a>
-      <a href="#">Sign Out</a>
+      <a href="/settings">Settings</a>
+      <a href="#" onclick="signOut()">Sign Out</a>
     </div>
   </aside>
 
@@ -146,7 +149,7 @@
     <div class="header">
       <h1>Inventory Management</h1>
       <div class="header-controls">
-        <button class="btn-toggle">🌙</button>
+        <button class="btn-toggle theme-toggle">🌙</button>
       </div>
     </div>
 
@@ -203,5 +206,83 @@
       </table>
     </div>
   </main>
+  <script src="js/app.js"></script>
+  <script>
+    initTheme();
+    requireLogin('technician');
+    const nameEl = document.getElementById('item-name');
+    const partEl = document.getElementById('part-number');
+    const priceEl = document.getElementById('price');
+    const qtyEl = document.getElementById('quantity');
+    const unlimitedEl = document.getElementById('unlimited');
+    const descEl = document.getElementById('description');
+    const addBtn = document.querySelector('.btn-add');
+    const tbody = document.querySelector('tbody');
+    let editIndex = null;
+
+    function clearForm() {
+      nameEl.value = '';
+      partEl.value = '';
+      priceEl.value = 0;
+      qtyEl.value = 0;
+      unlimitedEl.checked = false;
+      descEl.value = '';
+    }
+
+    function statusInfo(item) {
+      if (item.unlimited) return { cls: 'status-in', text: 'Unlimited' };
+      if (item.quantity <= 0) return { cls: 'status-out', text: 'Out of Stock' };
+      if (item.quantity < 5) return { cls: 'status-low', text: 'Low Stock' };
+      return { cls: 'status-in', text: 'In Stock' };
+    }
+
+    function renderItems() {
+      tbody.innerHTML = '';
+      getInventory().forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        const st = statusInfo(item);
+        tr.innerHTML = `<td>${item.name}</td><td>${item.part}</td><td>€${item.price.toFixed(2)}</td><td>${item.unlimited ? '∞' : item.quantity}</td><td><span class="label-status ${st.cls}">${st.text}</span></td><td class="actions"><button class="btn-link" data-edit="${idx}">Edit</button><button class="btn-link delete" data-del="${idx}">Delete</button></td>`;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', () => {
+        removeInventoryItem(btn.dataset.del);
+        renderItems();
+      }));
+      tbody.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => {
+        const item = getInventory()[btn.dataset.edit];
+        nameEl.value = item.name;
+        partEl.value = item.part;
+        priceEl.value = item.price;
+        qtyEl.value = item.quantity;
+        unlimitedEl.checked = item.unlimited;
+        descEl.value = item.description || '';
+        editIndex = btn.dataset.edit;
+        addBtn.textContent = 'Save Item';
+      }));
+    }
+
+    addBtn.addEventListener('click', () => {
+      const item = {
+        name: nameEl.value.trim(),
+        part: partEl.value.trim(),
+        price: parseFloat(priceEl.value) || 0,
+        quantity: parseInt(qtyEl.value) || 0,
+        unlimited: unlimitedEl.checked,
+        description: descEl.value.trim()
+      };
+      if (!item.name || !item.part) return;
+      if (editIndex === null) {
+        addInventoryItem(item);
+      } else {
+        updateInventoryItem(editIndex, item);
+        editIndex = null;
+        addBtn.textContent = 'Add Inventory Item';
+      }
+      clearForm();
+      renderItems();
+    });
+
+    renderItems();
+  </script>
 </body>
 </html>
