@@ -74,8 +74,8 @@ Create an app registration in the Microsoft Entra admin center and grant it the 
 - `Mail.Send`
 
 Assign the app access to the shared mailbox you wish to use. By default the app can reach every mailbox; if you restrict access with [Application Access Policies](EntraApp.md#4-allow-access-to-the-shared-mailbox), ensure the shared mailbox is included. After saving the credentials and address in Settings, incoming mail from the mailbox’s Inbox is queued in the dashboard’s “Incoming Mail” section, and external ticket replies are sent from the same address.
-The server polls the mailbox every minute and also whenever a technician opens the dashboard. Only messages received after the last successful poll are downloaded, so previously processed mail is not re-imported.
-To avoid missing messages when system clocks differ slightly, the poller checks one minute before the last recorded sync time. Outgoing messages explicitly set the shared mailbox as the sender, resolving common Microsoft Graph “AccessDenied” errors.
+
+The server polls the mailbox every minute (and whenever a technician opens the dashboard) for unread messages. Each imported message is marked as read, its attachments are downloaded, and the message ID is remembered so CoreQueue does not reprocess the same email even if Microsoft Graph returns it again. Outgoing messages explicitly set the shared mailbox as the sender, ensuring replies originate from the same address.
 
 ### Testing the connection
 

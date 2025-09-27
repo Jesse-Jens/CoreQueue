@@ -37,17 +37,12 @@
     }
   ],
   "tickets": [],
-  "incomingEmails": [
-    {
-      "id": 1,
-      "from": "customer@example.com",
-      "subject": "Printer issue",
-      "body": "The printer is jammed",
-      "attachments": []
-    }
-  ],
+  "incomingEmails": [],
   "nextTicketId": 1,
   "nextOrgId": 2,
   "adminPassword": "admin123",
-  "lastMailSync": "2024-01-01T00:00:00.000Z"
+  "mailSync": {
+    "lastReceivedDate": null,
+    "processedIds": []
+  }
 }

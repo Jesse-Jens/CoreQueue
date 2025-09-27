@@ -41,7 +41,7 @@ You can also grant the app full access directly from the Exchange admin center u
 
 ## 5. Configure CoreQueue
 1. In CoreQueue, open **Settings → System** (admin only).
-2. Enter the mailbox address (`service@techfusion-it.com` or your own), Tenant ID, Client ID and Client Secret.
+2. Enter the mailbox address (left blank by default), Tenant ID, Client ID and Client Secret.
 3. Click **Save**.
 4. Use **Send Test Mail** to verify the configuration. The server sends a message from the shared mailbox back to itself and reports the result.
 
@@ -65,3 +65,9 @@ TOKEN_ENDPOINT=https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token
 - Check server logs for the full Microsoft Graph error message when tests fail.
 
 With these steps complete, CoreQueue will be able to fetch new messages from the shared mailbox every minute and send outgoing mail through the same address.
+
+## How CoreQueue uses Microsoft Graph
+
+1. CoreQueue requests an OAuth token via the client-credentials flow with the `https://graph.microsoft.com/.default` scope.
+2. Every minute (and whenever a technician opens the dashboard) the server calls `GET /users/{mailbox}/mailFolders/Inbox/messages` filtered to unread items. Each imported message is marked as read, attachments are downloaded, and the message ID is stored to avoid processing it twice.
+3. Outgoing ticket replies use `POST /users/{mailbox}/sendMail`, explicitly setting the shared mailbox as the sender so the same address handles both inbound and outbound mail.

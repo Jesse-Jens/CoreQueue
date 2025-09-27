@@ -10,6 +10,11 @@ const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'storage.json');
 const CF_TOKEN_FILE = path.join(DATA_DIR, 'cloudflare-token');
 const MAIL_FILE = path.join(DATA_DIR, 'mail.json');
+const DEFAULT_GRAPH_API = 'https://graph.microsoft.com/v1.0';
+const GRAPH_SCOPE = 'https://graph.microsoft.com/.default';
+const MAX_TRACKED_MESSAGE_IDS = 200;
+
+let mailFetchLock = false;
 
 app.use(express.json({limit: '1mb'}));
 
@@ -24,13 +29,35 @@ function ensureDataFile() {
       nextTicketId: 1,
       nextOrgId: 1,
       adminPassword: 'admin123',
-      lastMailSync: new Date().toISOString()
+      mailSync: {
+        lastReceivedDate: null,
+        processedIds: []
+      }
     }, null, 2));
   } else {
     try {
       const store = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-      if (!store.lastMailSync) {
-        store.lastMailSync = new Date().toISOString();
+      let updated = false;
+      if (!Array.isArray(store.incomingEmails)) {
+        store.incomingEmails = [];
+        updated = true;
+      }
+      if (!store.mailSync || typeof store.mailSync !== 'object') {
+        store.mailSync = {
+          lastReceivedDate: store.lastMailSync || null,
+          processedIds: []
+        };
+        updated = true;
+      }
+      if (!Array.isArray(store.mailSync.processedIds)) {
+        store.mailSync.processedIds = [];
+        updated = true;
+      }
+      if ('lastMailSync' in store) {
+        delete store.lastMailSync;
+        updated = true;
+      }
+      if (updated) {
         fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
       }
     } catch {}
@@ -38,7 +65,7 @@ function ensureDataFile() {
   if (!fs.existsSync(CF_TOKEN_FILE)) fs.writeFileSync(CF_TOKEN_FILE, '');
   if (!fs.existsSync(MAIL_FILE)) {
     fs.writeFileSync(MAIL_FILE, JSON.stringify({
-      address: 'service@techfusion-it.com',
+      address: '',
       tenantId: '',
       clientId: '',
       clientSecret: ''
@@ -48,70 +75,173 @@ function ensureDataFile() {
 
 ensureDataFile();
 
-async function fetchIncomingMail() {
-  const cfg = getMailConfig();
-  if (!cfg.tenantId || !cfg.clientId || !cfg.clientSecret || !cfg.address) return [];
+function loadStore() {
+  ensureDataFile();
   try {
+    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  } catch {
+    return {
+      accounts: [],
+      organisations: [],
+      tickets: [],
+      incomingEmails: [],
+      nextTicketId: 1,
+      nextOrgId: 1,
+      adminPassword: 'admin123',
+      mailSync: { lastReceivedDate: null, processedIds: [] }
+    };
+  }
+}
+
+function saveStore(store) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
+}
+
+function ensureMailState(store) {
+  if (!Array.isArray(store.incomingEmails)) store.incomingEmails = [];
+  if (!store.mailSync || typeof store.mailSync !== 'object') {
+    store.mailSync = { lastReceivedDate: null, processedIds: [] };
+  }
+  if (!Array.isArray(store.mailSync.processedIds)) {
+    store.mailSync.processedIds = [];
+  }
+}
+
+async function fetchIncomingMail() {
+  if (mailFetchLock) return [];
+  mailFetchLock = true;
+  try {
+    const cfg = normalizeMailSettings(getMailConfig());
+    if (!cfg.tenantId || !cfg.clientId || !cfg.clientSecret || !cfg.address) return [];
+
+    const store = loadStore();
+    ensureMailState(store);
+
     const token = await getGraphToken(cfg);
-    const store = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    const lastSync = new Date(store.lastMailSync || 0);
-    // subtract a minute to avoid missing messages due to clock differences
-    const since = new Date(lastSync.getTime() - 60000)
-      .toISOString()
-      .replace(/\..+Z$/, 'Z');
-    const base = cfg.graphApi || 'https://graph.microsoft.com/v1.0';
-    const msgRes = await fetch(
-      `${base}/users/${encodeURIComponent(cfg.address)}/mailFolders/Inbox/messages?$top=25&$orderby=receivedDateTime%20asc&$filter=receivedDateTime%20ge%20${encodeURIComponent(since)}&$select=id,subject,from,body,hasAttachments,receivedDateTime`,
-      { headers: { Authorization: 'Bearer ' + token } }
-    );
-    if (!msgRes.ok) {
-      const text = await msgRes.text();
-      console.error('mail fetch failed', msgRes.status, text);
-      return [];
+    const base = cfg.graphApi;
+    const mailboxPath = encodeURIComponent(cfg.address);
+    const since = store.mailSync.lastReceivedDate;
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      Prefer: 'outlook.body-content-type="html"',
+      ConsistencyLevel: 'eventual'
+    };
+
+    const collected = [];
+    const processed = new Set(store.mailSync.processedIds || []);
+
+    const initialUrl = new URL(`${base}/users/${mailboxPath}/mailFolders/Inbox/messages`);
+    initialUrl.searchParams.set('$top', '50');
+    initialUrl.searchParams.set('$orderby', 'receivedDateTime asc');
+    initialUrl.searchParams.set('$select', 'id,subject,from,body,bodyPreview,hasAttachments,receivedDateTime,isRead');
+    if (since) {
+      initialUrl.searchParams.set('$filter', `(isRead eq false) and receivedDateTime gt ${since}`);
+    } else {
+      initialUrl.searchParams.set('$filter', 'isRead eq false');
     }
-    const msgData = await msgRes.json();
-    const messages = msgData.value || [];
-    const emails = [];
-    for (const m of messages) {
-      const email = {
-        id: m.id,
-        subject: m.subject,
-        from: (m.from && m.from.emailAddress && m.from.emailAddress.address) || '',
-        body: (m.body && m.body.content) || '',
-        attachments: []
-      };
-      if (m.hasAttachments) {
-        const attRes = await fetch(
-          `${base}/users/${encodeURIComponent(cfg.address)}/messages/${m.id}/attachments`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (attRes.ok) {
-          const attData = await attRes.json();
-          (attData.value || []).forEach(a => {
-            email.attachments.push({
-              name: a.name,
-              data: `data:${a.contentType};base64,${a.contentBytes}`
-            });
+
+    let nextUrl = initialUrl.toString();
+
+    while (nextUrl) {
+      const res = await fetch(nextUrl, { headers });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('mail fetch failed', res.status, text);
+        break;
+      }
+      const data = await res.json();
+      const messages = Array.isArray(data.value) ? data.value : [];
+      for (const m of messages) {
+        if (!m || !m.id || processed.has(m.id)) continue;
+        const fromAddress = (m.from && m.from.emailAddress && m.from.emailAddress.address) || '';
+        const email = {
+          id: m.id,
+          subject: m.subject || '(no subject)',
+          from: fromAddress,
+          body: (m.body && m.body.content) || m.bodyPreview || '',
+          receivedDateTime: m.receivedDateTime || null,
+          attachments: []
+        };
+
+        if (m.hasAttachments) {
+          try {
+            const attachmentUrl = `${base}/users/${mailboxPath}/messages/${encodeURIComponent(m.id)}/attachments?$select=id,name,contentType,contentBytes,size`;
+            const attRes = await fetch(attachmentUrl, { headers: { Authorization: `Bearer ${token}` } });
+            if (attRes.ok) {
+              const attData = await attRes.json();
+              (attData.value || []).forEach(a => {
+                if (!a || !a.name || !a.contentBytes) return;
+                email.attachments.push({
+                  name: a.name,
+                  data: `data:${a.contentType || 'application/octet-stream'};base64,${a.contentBytes}`
+                });
+              });
+            } else {
+              const errText = await attRes.text();
+              console.error('attachment fetch failed', attRes.status, errText);
+            }
+          } catch (err) {
+            console.error('attachment fetch failed', err);
+          }
+        }
+
+        collected.push(email);
+        processed.add(m.id);
+
+        if (email.receivedDateTime) {
+          const current = store.mailSync.lastReceivedDate ? new Date(store.mailSync.lastReceivedDate) : null;
+          const candidate = new Date(email.receivedDateTime);
+          if (!current || candidate > current) {
+            store.mailSync.lastReceivedDate = candidate.toISOString();
+          }
+        }
+
+        try {
+          await fetch(`${base}/users/${mailboxPath}/messages/${encodeURIComponent(m.id)}`, {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ isRead: true })
           });
+        } catch (err) {
+          console.error('mark read failed', err);
         }
       }
-      emails.push(email);
-      await fetch(`${base}/users/${encodeURIComponent(cfg.address)}/messages/${m.id}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isRead: true })
-      });
+
+      if (collected.length >= MAX_TRACKED_MESSAGE_IDS) break;
+      nextUrl = data['@odata.nextLink'] || '';
     }
-    store.incomingEmails = store.incomingEmails || [];
-    emails.forEach(e => {
-      if (!store.incomingEmails.find(x => x.id === e.id)) store.incomingEmails.push(e);
+
+    if (!collected.length) return [];
+
+    const existingQueue = Array.isArray(store.incomingEmails) ? store.incomingEmails : [];
+    collected.forEach(email => {
+      if (!existingQueue.find(x => x.id === email.id)) existingQueue.push(email);
     });
-    store.lastMailSync = new Date().toISOString();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
-    return emails;
+    existingQueue.sort((a, b) => {
+      const aDate = a.receivedDateTime ? new Date(a.receivedDateTime).getTime() : 0;
+      const bDate = b.receivedDateTime ? new Date(b.receivedDateTime).getTime() : 0;
+      return bDate - aDate;
+    });
+    store.incomingEmails = existingQueue;
+
+    const combined = [...(store.mailSync.processedIds || []), ...collected.map(e => e.id)];
+    const deduped = [];
+    combined.forEach(id => {
+      if (!deduped.includes(id)) deduped.push(id);
+    });
+    store.mailSync.processedIds = deduped.slice(-MAX_TRACKED_MESSAGE_IDS);
+
+    saveStore(store);
+    return collected;
   } catch (e) {
     console.error('mail fetch failed', e);
     return [];
+  } finally {
+    mailFetchLock = false;
   }
 }
 
@@ -130,10 +260,35 @@ app.get('/api/storage', (req, res) => {
 });
 
 app.post('/api/storage', (req, res) => {
-  fs.writeFile(DATA_FILE, JSON.stringify(req.body || {}, null, 2), err => {
-    if (err) return res.status(500).json({ error: 'write_failed' });
-    res.json({ status: 'ok' });
-  });
+  try {
+    const incoming = req.body || {};
+    const current = loadStore();
+    const next = { ...current };
+    const replaceKeys = ['accounts', 'organisations', 'tickets', 'incomingEmails', 'nextTicketId', 'nextOrgId', 'adminPassword'];
+    replaceKeys.forEach(key => {
+      if (key in incoming) {
+        next[key] = incoming[key];
+      }
+    });
+    if ('mailSync' in incoming) {
+      const incomingMailSync = incoming.mailSync || {};
+      next.mailSync = Object.assign({}, current.mailSync || { lastReceivedDate: null, processedIds: [] }, incomingMailSync);
+      if (!Array.isArray(next.mailSync.processedIds)) {
+        next.mailSync.processedIds = [];
+      }
+      if (next.mailSync.processedIds.length > MAX_TRACKED_MESSAGE_IDS) {
+        next.mailSync.processedIds = next.mailSync.processedIds.slice(-MAX_TRACKED_MESSAGE_IDS);
+      }
+    }
+    ensureMailState(next);
+    fs.writeFile(DATA_FILE, JSON.stringify(next, null, 2), err => {
+      if (err) return res.status(500).json({ error: 'write_failed' });
+      res.json({ status: 'ok' });
+    });
+  } catch (e) {
+    console.error('storage sync failed', e);
+    res.status(500).json({ error: 'write_failed' });
+  }
 });
 
 app.get('/api/cloudflare', (req, res) => {
@@ -185,7 +340,7 @@ app.post('/api/cloudflare', (req, res) => {
 });
 
 function getMailConfig() {
-  const cfg = { address: '', tenantId: '', clientId: '', clientSecret: '', graphApi: 'https://graph.microsoft.com/v1.0', tokenEndpoint: '' };
+  const cfg = { address: '', tenantId: '', clientId: '', clientSecret: '', graphApi: DEFAULT_GRAPH_API, tokenEndpoint: '' };
   try {
     Object.assign(cfg, JSON.parse(fs.readFileSync(MAIL_FILE, 'utf8')));
   } catch {}
@@ -198,10 +353,21 @@ function getMailConfig() {
   return cfg;
 }
 
+function normalizeMailSettings(cfg) {
+  const normalized = { ...cfg };
+  normalized.address = (cfg.address || '').trim();
+  normalized.tenantId = (cfg.tenantId || '').trim();
+  normalized.clientId = (cfg.clientId || '').trim();
+  normalized.clientSecret = (cfg.clientSecret || '').trim();
+  normalized.graphApi = ((cfg.graphApi || '').trim()) || DEFAULT_GRAPH_API;
+  normalized.tokenEndpoint = (cfg.tokenEndpoint || '').trim();
+  return normalized;
+}
+
 async function getGraphToken(cfg) {
   const params = new URLSearchParams();
   params.append('client_id', cfg.clientId);
-  params.append('scope', 'https://graph.microsoft.com/.default');
+  params.append('scope', GRAPH_SCOPE);
   params.append('client_secret', cfg.clientSecret);
   params.append('grant_type', 'client_credentials');
   const tokenUrl = cfg.tokenEndpoint || `https://login.microsoftonline.com/${cfg.tenantId}/oauth2/v2.0/token`;
@@ -239,7 +405,7 @@ app.get('/api/mail/fetch', async (req, res) => {
 });
 
 app.post('/api/mail/send', async (req, res) => {
-  const cfg = getMailConfig();
+  const cfg = normalizeMailSettings(getMailConfig());
   if (!cfg.tenantId || !cfg.clientId || !cfg.clientSecret || !cfg.address) {
     return res.status(400).json({ error: 'mail_not_configured' });
   }
@@ -252,12 +418,14 @@ app.post('/api/mail/send', async (req, res) => {
         subject: body.subject,
         body: { contentType: 'HTML', content: body.body },
         from: { emailAddress: { address: cfg.address } },
+        sender: { emailAddress: { address: cfg.address } },
         toRecipients: [{ emailAddress: { address: body.to } }],
         ccRecipients: body.cc ? [{ emailAddress: { address: body.cc } }] : [],
         bccRecipients: body.bcc ? [{ emailAddress: { address: body.bcc } }] : []
-      }
+      },
+      saveToSentItems: true
     };
-    const base = cfg.graphApi || 'https://graph.microsoft.com/v1.0';
+    const base = cfg.graphApi;
     const sendRes = await fetch(
       `${base}/users/${encodeURIComponent(cfg.address)}/sendMail`,
       {
@@ -290,7 +458,7 @@ app.post('/api/mail/send', async (req, res) => {
 });
 
 app.post('/api/mail/test', async (req, res) => {
-  const cfg = getMailConfig();
+  const cfg = normalizeMailSettings(getMailConfig());
   if (!cfg.tenantId || !cfg.clientId || !cfg.clientSecret || !cfg.address) {
     return res.status(400).json({ error: 'mail_not_configured' });
   }
@@ -301,10 +469,12 @@ app.post('/api/mail/test', async (req, res) => {
         subject: 'CoreQueue Mail Test',
         body: { contentType: 'HTML', content: '<p>This is a CoreQueue test email.</p>' },
         from: { emailAddress: { address: cfg.address } },
+        sender: { emailAddress: { address: cfg.address } },
         toRecipients: [{ emailAddress: { address: cfg.address } }]
-      }
+      },
+      saveToSentItems: false
     };
-    const base = cfg.graphApi || 'https://graph.microsoft.com/v1.0';
+    const base = cfg.graphApi;
     const sendRes = await fetch(
       `${base}/users/${encodeURIComponent(cfg.address)}/sendMail`,
       {
